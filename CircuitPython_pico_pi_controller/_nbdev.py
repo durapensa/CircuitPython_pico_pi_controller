@@ -2,14 +2,7 @@
 
 __all__ = ["index", "modules", "custom_doc_links", "git_url"]
 
-index = {"polling_interval": "00_core.ipynb",
-         "poll_fail_max": "00_core.ipynb",
-         "IDENTITY": "00_core.ipynb",
-         "IDF": "00_core.ipynb",
-         "HOS": "00_core.ipynb",
-         "LOD": "00_core.ipynb",
-         "TIM": "00_core.ipynb",
-         "PPDevice": "00_core.ipynb",
+index = {"PPDevice": "00_core.ipynb",
          "PPController": "00_core.ipynb"}
 
 modules = ["core.py"]
