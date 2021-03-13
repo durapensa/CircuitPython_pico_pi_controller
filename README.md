@@ -1,24 +1,7 @@
-# Project name here
-> Summary description here.
+# CircuitPython_pico_pi_controller
+> A service interface for one or more Raspberry Pi\* SBCs to be monitored & controlled by a Raspberry Pi Pico<sup>†</sup>, *using i2c*.
 
-
-This file will become your README and also the index of your documentation.
 
 ## Install
 
-`pip install your_project_name`
-
-## How to use
-
-Fill me in please! Don't forget code examples:
-
-```
-1+1
-```
-
-
-
-
-    2
-
-
+See the [install guide](https://github.com/durapensa/pico_pi_controller/blob/main/README.md) at the sister-library for SBCs.
