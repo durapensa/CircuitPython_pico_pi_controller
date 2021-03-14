@@ -62,11 +62,16 @@ class PPDevice(I2CDevice):
 class PPController(I2C):
     """Represents one of the system's I2C busses and tracks which I2C
     peripherals are `PPDevice`s."""
-    def __init__(self, scl=SCL, sda=SDA, frequency=4800, bosmang=None, UART_RX=None, UART_TX=None):
+    def __init__(self, scl=SCL, sda=SDA, frequency=4800, timeout=10000, bosmang=None, UART_RX=None, UART_TX=None):
         self.scl = scl
         self.sda = sda
         self.frequency=frequency
-        super().__init__(scl, sda, frequency=frequency, timeout=10000)
+        self.timeout=timeout
+        try:
+            super().__init__(scl, sda, frequency=frequency, timeout=timeout)
+        except:
+            super().__init__(scl, sda, frequency=frequency)
+            """Blinka does not have keyword argument `timeout`"""
         self.bosmang = bosmang
         """PPDevice hostname selected to recieve datetime from, send control instructions,
         have UART connected, etc."""
