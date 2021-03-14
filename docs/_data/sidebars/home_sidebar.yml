@@ -10,7 +10,7 @@ entries:
       title: Overview
       url: /
     - output: web,pdf
-      title: pico_pi_controller
+      title: CircuitPython_pico_pi_controller
       url: core.html
     output: web
     title: CircuitPython_pico_pi_controller
