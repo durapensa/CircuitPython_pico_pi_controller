@@ -5,11 +5,15 @@ __all__ = ['polling_interval', 'poll_fail_max', 'IDENTITY', 'IDF', 'HOS', 'LOD',
 
 # Cell
 from sys import byteorder, modules
-#from rtc import RTC #can't do without MCU CircuitPython
-#from time import sleep, datetime, struct_time
-from time import sleep
-from board import SCL,SDA
-from busio import I2C
+try:
+    from rtc import RTC
+except:
+    pass
+from time import sleep, struct_time
+from datetime import datetime
+#from board import SCL,SDA
+import board
+import busio
 from adafruit_bus_device.i2c_device import I2CDevice
 try:
     from adafruit_itertools.adafruit_itertools import chain
@@ -46,39 +50,45 @@ class PPDevice(I2CDevice):
     and stores data from those peripherals identified as PPC devices."""
     def __init__(self, i2c, device_address, **kwargs):
         super().__init__(i2c,device_address,**kwargs)
-        #self.device_address = device_address
-        self.hostname = "unknown"
+        self.device_address = device_address
+
         self.bosmang = False
-        self.load = ""
+        self.UART_RX = UART_RX
+        """MCU GPIO RX for passthru from bosmang console TX"""
+        self.UART_TX = UART_TX
+        """MCU GPIO TX for passthru from bosmang console RX"""
         self.pen = 0
-        """MCU board pin connected to RPi PEN pin"""
+        """MCU GPIO connected to RPi PEN pin"""
         self.retries = 0
         """retry count before I2CDevice is considered 'other', i.e. not a PPC device."""
+
+        self.hostname = "unknown"
+        self.load = ""
+        self.datetime = None
+        """to send datetime as bosmang, and used to check for datetime skew
+           on other devices."""
 
     def getHostname(self):
         return self.hostname
 
 # Cell
-class PPController(I2C):
+class PPController(busio.I2C):
     """Represents one of the system's I2C busses and tracks which I2C
     peripherals are `PPDevice`s."""
-    def __init__(self, scl=SCL, sda=SDA, frequency=4800, timeout=10000, bosmang=None, UART_RX=None, UART_TX=None):
+    def __init__(self, scl=board.SCL, sda=board.SDA, frequency=4800, timeout=10000, bosmang=None):
         self.scl = scl
         self.sda = sda
         self.frequency=frequency
         self.timeout=timeout
+        logging.info("Using I2C bus on pins",scl,sda,"at frequency",frequency,"with timeout",timeout)
         try:
             super().__init__(scl, sda, frequency=frequency, timeout=timeout)
         except:
             super().__init__(scl, sda, frequency=frequency)
             """Blinka does not have keyword argument `timeout`"""
         self.bosmang = bosmang
-        """PPDevice hostname selected to recieve datetime from, send control instructions,
-        have UART connected, etc."""
-        self.UART_RX = UART_RX
-        """board pin RX for passthru from bosmang"""
-        self.UART_TX = UART_TX
-        """board pin TX for passthru from bosmang"""
+        """PPDevice hostname selected to recieve datetime & control instructions from,
+           have UART connected for passthru, etc. Default is `None`."""
 
         self.devices = []
         self.noident = []
@@ -93,6 +103,7 @@ class PPController(I2C):
 
     def scanForNew(self):
         while not self.try_lock():
+            sleep(.1)
             pass
         for addr in self.scan():
             if not any(d.device_address == addr
