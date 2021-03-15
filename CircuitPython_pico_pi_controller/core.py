@@ -5,16 +5,18 @@ __all__ = ['polling_interval', 'poll_fail_max', 'IDENTITY', 'IDF', 'HOS', 'LOD',
 
 # Cell
 from sys import byteorder, modules
+from time import sleep, struct_time
+import board
+import busio
+from adafruit_bus_device.i2c_device import I2CDevice
 try:
     from rtc import RTC
 except:
     pass
-from time import sleep, struct_time
-from datetime import datetime
-#from board import SCL,SDA
-import board
-import busio
-from adafruit_bus_device.i2c_device import I2CDevice
+try:
+    from adafruit_datetime import datetime
+except:
+    from datetime import datetime
 try:
     from adafruit_itertools.adafruit_itertools import chain
 except:
@@ -23,6 +25,8 @@ try:
     import adafruit_logging as logging
 except:
     import logging
+
+logging.basicConfig(level=logging.DEBUG)
 
 # Cell
 polling_interval = 2
@@ -80,7 +84,8 @@ class PPController(busio.I2C):
         self.sda = sda
         self.frequency=frequency
         self.timeout=timeout
-        logging.info("Using I2C bus on pins",scl,sda,"at frequency",frequency,"with timeout",timeout)
+        logging.info("PPC: using I2C bus on pins "+str(scl)+","+str(sda)+" at frequency "+str(frequency)+
+                     " baud with timeout "+str(timeout))
         try:
             super().__init__(scl, sda, frequency=frequency, timeout=timeout)
         except:
