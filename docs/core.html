@@ -87,13 +87,6 @@ mycontroller.listdevices()
     
 <div class="cell border-box-sizing code_cell rendered">
 
-</div>
-    {% endraw %}
-
-    {% raw %}
-    
-<div class="cell border-box-sizing code_cell rendered">
-
 <div class="output_wrapper">
 <div class="output">
 
@@ -101,7 +94,7 @@ mycontroller.listdevices()
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h2 id="PPDevice" class="doc_header"><code>class</code> <code>PPDevice</code><a href="https://github.com/durapensa/CircuitPython_pico_pi_controller/tree/main/CircuitPython_pico_pi_controller/core.py#L49" class="source_link" style="float:right">[source]</a></h2><blockquote><p><code>PPDevice</code>(<strong><code>i2c</code></strong>, <strong><code>device_address</code></strong>, <strong>**<code>kwargs</code></strong>) :: <code>I2CDevice</code></p>
+<h2 id="PPDevice" class="doc_header"><code>class</code> <code>PPDevice</code><a href="https://github.com/durapensa/CircuitPython_pico_pi_controller/tree/main/CircuitPython_pico_pi_controller/core.py#L44" class="source_link" style="float:right">[source]</a></h2><blockquote><p><code>PPDevice</code>(<strong><code>i2c</code></strong>, <strong><code>device_address</code></strong>, <strong>**<code>kwargs</code></strong>) :: <code>I2CDevice</code></p>
 </blockquote>
 <p>Represents an I2C peripheral device known to a <a href="/CircuitPython_pico_pi_controller/core.html#PPController"><code>PPController</code></a>
 and stores data from those peripherals identified as PPC devices.</p>
@@ -134,7 +127,7 @@ and stores data from those peripherals identified as PPC devices.</p>
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h2 id="PPController" class="doc_header"><code>class</code> <code>PPController</code><a href="https://github.com/durapensa/CircuitPython_pico_pi_controller/tree/main/CircuitPython_pico_pi_controller/core.py#L76" class="source_link" style="float:right">[source]</a></h2><blockquote><p><code>PPController</code>(<strong><code>scl</code></strong>=<em><code>3</code></em>, <strong><code>sda</code></strong>=<em><code>2</code></em>, <strong><code>frequency</code></strong>=<em><code>4800</code></em>, <strong><code>timeout</code></strong>=<em><code>10000</code></em>, <strong><code>bosmang</code></strong>=<em><code>None</code></em>) :: <code>I2C</code></p>
+<h2 id="PPController" class="doc_header"><code>class</code> <code>PPController</code><a href="https://github.com/durapensa/CircuitPython_pico_pi_controller/tree/main/CircuitPython_pico_pi_controller/core.py#L72" class="source_link" style="float:right">[source]</a></h2><blockquote><p><code>PPController</code>(<strong><code>scl</code></strong>=<em><code>3</code></em>, <strong><code>sda</code></strong>=<em><code>2</code></em>, <strong><code>frequency</code></strong>=<em><code>4800</code></em>, <strong><code>timeout</code></strong>=<em><code>10000</code></em>, <strong><code>bosmang</code></strong>=<em><code>None</code></em>) :: <code>I2C</code></p>
 </blockquote>
 <p>Represents one of the system's I2C busses and tracks which I2C
 peripherals are <a href="/CircuitPython_pico_pi_controller/core.html#PPDevice"><code>PPDevice</code></a>s.</p>
