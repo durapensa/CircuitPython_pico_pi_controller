@@ -1,6 +1,7 @@
 {
   "CircuitPython_pico_pi_controller": {
     "Overview": "/",
-    "CircuitPython_pico_pi_controller": "core.html"
+    "CircuitPython_pico_pi_controller": "core.html",
+    "Title": "reports.html"
   }
 }

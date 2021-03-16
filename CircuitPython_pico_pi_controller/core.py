@@ -26,7 +26,11 @@ try:
 except:
     import logging
 
-logging.basicConfig(level=logging.DEBUG)
+try:
+    logger = logging.getLogger('PPC')
+except:
+    logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
 
 # Cell
 polling_interval = 2
@@ -34,13 +38,6 @@ poll_fail_max = 11
 #IDENTITY = bytearray('ppc-daemon','utf-8') # of RPi devices
 IDENTITY = bytearray(([ord(c) for c in list('ppc-daemon')]))
 """identifier string used by RPi devices"""
-
-# Cell
-#IDF = bytearray('I','utf-8') # request to send identification
-#HOS = bytearray('H','utf-8') # request to send hostname
-#LOD = bytearray('L','utf-8') # request to send load
-#TIM = bytearray('T','utf-8') # request to send datetime
-#PEN = bytearray('P','utf-8') # request to send MCU pin connected to RPi PEN
 
 IDF = bytearray(); IDF.append(ord('I')) # request to send identification
 HOS = bytearray(); HOS.append(ord('H')) # request to send hostname
@@ -84,10 +81,11 @@ class PPController(busio.I2C):
         self.sda = sda
         self.frequency=frequency
         self.timeout=timeout
-        logging.info("PPC: using I2C bus on pins "+str(scl)+","+str(sda)+" at frequency "+str(frequency)+
+        logger.info("PPC: using I2C bus on pins "+str(scl)+","+str(sda)+" at frequency "+str(frequency)+
                      " baud with timeout "+str(timeout))
         try:
             super().__init__(scl, sda, frequency=frequency, timeout=timeout)
+            #super().__init__(scl, sda)
         except:
             super().__init__(scl, sda, frequency=frequency)
             """Blinka does not have keyword argument `timeout`"""
@@ -107,9 +105,9 @@ class PPController(busio.I2C):
 
 
     def scanForNew(self):
-        while not self.try_lock():
-            sleep(.1)
-            pass
+        if self.try_lock() == False:
+            logger.info("PPC: I2C lock not avilable")
+            return False
         for addr in self.scan():
             if not any(d.device_address == addr
                        for d in chain(self.devices,self.noident,self.othrdev)):
@@ -138,3 +136,13 @@ class PPController(busio.I2C):
 
     def listdevices(self):
         return self.devices
+
+    def __enter__(self):
+        while not super().i2c.try_lock():
+            pass
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        super().i2c.unlock()
+        super().i2c.deinit()
+        return False
