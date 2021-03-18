@@ -94,7 +94,7 @@ mycontroller.listdevices()
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h2 id="PPDevice" class="doc_header"><code>class</code> <code>PPDevice</code><a href="https://github.com/durapensa/CircuitPython_pico_pi_controller/tree/main/CircuitPython_pico_pi_controller/core.py#L44" class="source_link" style="float:right">[source]</a></h2><blockquote><p><code>PPDevice</code>(<strong><code>i2c</code></strong>, <strong><code>device_address</code></strong>, <strong>**<code>kwargs</code></strong>) :: <code>I2CDevice</code></p>
+<h2 id="PPDevice" class="doc_header"><code>class</code> <code>PPDevice</code><a href="https://github.com/durapensa/CircuitPython_pico_pi_controller/tree/main/CircuitPython_pico_pi_controller/core.py#L51" class="source_link" style="float:right">[source]</a></h2><blockquote><p><code>PPDevice</code>(<strong><code>controller</code></strong>=<em><code>None</code></em>, <strong><code>device_address</code></strong>=<em><code>None</code></em>, <strong>*<code>argv</code></strong>, <strong>**<code>kwargs</code></strong>)</p>
 </blockquote>
 <p>Represents an I2C peripheral device known to a <a href="/CircuitPython_pico_pi_controller/core.html#PPController"><code>PPController</code></a>
 and stores data from those peripherals identified as PPC devices.</p>
@@ -127,10 +127,106 @@ and stores data from those peripherals identified as PPC devices.</p>
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h2 id="PPController" class="doc_header"><code>class</code> <code>PPController</code><a href="https://github.com/durapensa/CircuitPython_pico_pi_controller/tree/main/CircuitPython_pico_pi_controller/core.py#L72" class="source_link" style="float:right">[source]</a></h2><blockquote><p><code>PPController</code>(<strong><code>scl</code></strong>=<em><code>3</code></em>, <strong><code>sda</code></strong>=<em><code>2</code></em>, <strong><code>frequency</code></strong>=<em><code>4800</code></em>, <strong><code>timeout</code></strong>=<em><code>10000</code></em>, <strong><code>bosmang</code></strong>=<em><code>None</code></em>) :: <code>I2C</code></p>
+<h2 id="PPController" class="doc_header"><code>class</code> <code>PPController</code><a href="https://github.com/durapensa/CircuitPython_pico_pi_controller/tree/main/CircuitPython_pico_pi_controller/core.py#L84" class="source_link" style="float:right">[source]</a></h2><blockquote><p><code>PPController</code>(<strong><code>scl</code></strong>=<em><code>3</code></em>, <strong><code>sda</code></strong>=<em><code>2</code></em>, <strong><code>frequency</code></strong>=<em><code>4800</code></em>, <strong><code>timeout</code></strong>=<em><code>10000</code></em>)</p>
 </blockquote>
 <p>Represents one of the system's I2C busses and tracks which I2C
 peripherals are <a href="/CircuitPython_pico_pi_controller/core.html#PPDevice"><code>PPDevice</code></a>s.</p>
+
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+<div class="output_markdown rendered_html output_subarea ">
+<h4 id="scanForNew" class="doc_header"><code>scanForNew</code><a href="https://github.com/durapensa/CircuitPython_pico_pi_controller/tree/main/CircuitPython_pico_pi_controller/core.py#L105" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>scanForNew</code>(<strong><code>controller</code></strong>)</p>
+</blockquote>
+
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+<div class="output_markdown rendered_html output_subarea ">
+<h4 id="identifyNew" class="doc_header"><code>identifyNew</code><a href="https://github.com/durapensa/CircuitPython_pico_pi_controller/tree/main/CircuitPython_pico_pi_controller/core.py#L124" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>identifyNew</code>(<strong><code>controller</code></strong>)</p>
+</blockquote>
+
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+<div class="output_markdown rendered_html output_subarea ">
+<h4 id="autoAddDevices" class="doc_header"><code>autoAddDevices</code><a href="https://github.com/durapensa/CircuitPython_pico_pi_controller/tree/main/CircuitPython_pico_pi_controller/core.py#L140" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>autoAddDevices</code>(<strong><code>controller</code></strong>)</p>
+</blockquote>
+
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+<div class="output_markdown rendered_html output_subarea ">
+<h4 id="listdevices" class="doc_header"><code>listdevices</code><a href="https://github.com/durapensa/CircuitPython_pico_pi_controller/tree/main/CircuitPython_pico_pi_controller/core.py#L144" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>listdevices</code>(<strong><code>controller</code></strong>)</p>
+</blockquote>
 
 </div>
 
@@ -151,6 +247,67 @@ peripherals are <a href="/CircuitPython_pico_pi_controller/core.html#PPDevice"><
 
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="Debugging">Debugging<a class="anchor-link" href="#Debugging"> </a></h2><div class="highlight"><pre><span></span><span class="n">con</span><span class="o">=</span><span class="n">PPController</span><span class="p">()</span>
+<span class="n">con</span><span class="o">.</span><span class="n">i2c</span><span class="o">=</span><span class="n">busio</span><span class="o">.</span><span class="n">I2C</span><span class="p">(</span><span class="n">scl</span><span class="o">=</span><span class="n">con</span><span class="o">.</span><span class="n">scl</span><span class="p">,</span><span class="n">sda</span><span class="o">=</span><span class="n">con</span><span class="o">.</span><span class="n">sda</span><span class="p">,</span><span class="n">frequency</span><span class="o">=</span><span class="n">con</span><span class="o">.</span><span class="n">frequency</span><span class="p">)</span>
+<span class="n">scanForNew</span><span class="p">(</span><span class="n">con</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">CircuitPython_pico_pi_controller</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="k">pass</span>
+
+<span class="n">con</span><span class="o">=</span><span class="n">PPController</span><span class="p">()</span>
+<span class="n">con</span><span class="o">.</span><span class="n">i2c</span><span class="o">=</span><span class="n">busio</span><span class="o">.</span><span class="n">I2C</span><span class="p">(</span><span class="n">scl</span><span class="o">=</span><span class="n">con</span><span class="o">.</span><span class="n">scl</span><span class="p">,</span><span class="n">sda</span><span class="o">=</span><span class="n">con</span><span class="o">.</span><span class="n">sda</span><span class="p">,</span><span class="n">frequency</span><span class="o">=</span><span class="n">con</span><span class="o">.</span><span class="n">frequency</span><span class="p">)</span>
+<span class="n">scanForNew</span><span class="p">(</span><span class="n">con</span><span class="p">)</span>
+<span class="c1">#identifyNew(con)</span>
+
+<span class="c1">#dev=PPDevice(con.i2c,0x13)</span>
+<span class="c1">#print(dir(dev))</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+<div class="output_subarea output_stream output_stderr output_text">
+<pre>INFO:PPC:PPC: scanning I2C bus for PPController at SCL/SDA 3/2
+</pre>
+</div>
+</div>
+
+<div class="output_area">
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>&lt;busio.I2C object at 0x73d2a0f0&gt;
+&lt;busio.I2C object at 0x73d2a0f0&gt;
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
 <h2 id="Appendix">Appendix<a class="anchor-link" href="#Appendix"> </a></h2>
 </div>
 </div>
@@ -165,7 +322,7 @@ peripherals are <a href="/CircuitPython_pico_pi_controller/core.html#PPDevice"><
 <div class=" highlight hl-ipython3"><pre><span></span><span class="k">try</span><span class="p">:</span>
     <span class="kn">from</span> <span class="nn">nbdev.export</span> <span class="kn">import</span> <span class="n">notebook2script</span>
     <span class="n">notebook2script</span><span class="p">()</span>
-<span class="n">excpet</span><span class="p">:</span>
+<span class="k">except</span><span class="p">:</span>
     <span class="k">pass</span>
 </pre></div>
 
