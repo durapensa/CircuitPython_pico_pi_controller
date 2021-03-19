@@ -9,11 +9,7 @@ index = {"IDENTITY": "00_core.ipynb",
          "TIM": "00_core.ipynb",
          "PEN": "00_core.ipynb",
          "PPDevice": "00_core.ipynb",
-         "PPController": "00_core.ipynb",
-         "scanForNew": "00_core.ipynb",
-         "identifyNew": "00_core.ipynb",
-         "autoAddDevices": "00_core.ipynb",
-         "listdevices": "00_core.ipynb"}
+         "PPController": "00_core.ipynb"}
 
 modules = ["core.py"]
 
