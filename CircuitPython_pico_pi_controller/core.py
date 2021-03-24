@@ -7,7 +7,6 @@ __all__ = ['IDENTITY', 'BUFCLR', 'CLR', 'IDF', 'HOS', 'TIM', 'BOS', 'LOD', 'TZO'
 from sys import byteorder, modules
 from time import sleep, localtime
 import board
-#import busio
 from adafruit_bus_device import i2c_device
 try:
     from rtc import RTC
