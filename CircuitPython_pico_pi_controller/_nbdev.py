@@ -2,7 +2,10 @@
 
 __all__ = ["index", "modules", "custom_doc_links", "git_url"]
 
-index = {"IDENTITY": "00_core.ipynb",
+index = {"UNDevice": "00_core.ipynb",
+         "PPDevice": "00_core.ipynb",
+         "PPController": "00_core.ipynb",
+         "IDENTITY": "00_core.ipynb",
          "BUFCLR": "00_core.ipynb",
          "CLR": "00_core.ipynb",
          "IDF": "00_core.ipynb",
@@ -11,10 +14,7 @@ index = {"IDENTITY": "00_core.ipynb",
          "BOS": "00_core.ipynb",
          "LOD": "00_core.ipynb",
          "TZO": "00_core.ipynb",
-         "PEN": "00_core.ipynb",
-         "UNDevice": "00_core.ipynb",
-         "PPDevice": "00_core.ipynb",
-         "PPController": "00_core.ipynb"}
+         "PEN": "00_core.ipynb"}
 
 modules = ["core.py",
            "schedule.py"]
