@@ -24,10 +24,16 @@ try:
     import adafruit_logging as logging
     logger = logging.getLogger('PPC')
     logger.setLevel(logging.DEBUG)
+    # Monkey patch the logger's timestamp
+    def format(self, level, msg):
+        return "{0}: {1} - {2}".format(datetime.now().isoformat(), logging.level_for(level), msg)
+    logging.LoggingHandler.format = format
 except ModuleNotFoundError:
     import logging
     logger = logging.getLogger()
     logging.basicConfig(level = logging.DEBUG)
+
+
 
 # Cell
 IDENTITY = bytearray(([ord(c) for c in list('ppcd')]))
@@ -70,8 +76,8 @@ class PPDevice():
         self.retries_max = 4
         """retry count before I2CDevice is considered 'other', i.e. not a PPC device."""
         self.lastonline  = None
-        """controller timestamp updated with each successful receive. reports & bosmang
-           can decide what to do with this info."""
+        """type: datetime A controller time-stamp updated with each successful receive.
+           reports & bosmang can decide what to do with this info."""
 
         """All data below are received *from* the PPC device:"""
 
@@ -87,20 +93,20 @@ class PPDevice():
 
         self.hostname   = None
         self.datetime   = None
-        """datetime object converted from timestamp, used to send datetime as bosmang &
+        """type: datetime Converted from timestamp, used to send datetime as bosmang &
            to check for datetime skew on other devices."""
         self.utcoffset  = None
         self.loadavg    = None
 
-        self.id_str = type(self).__name__[0:3]+": "+str(hex(self.device_address))
+        self.id_str = type(self).__name__[2]+" "+str(hex(self.device_address))
 
     def log_txn(self, fname, message, msg=None):
         """Wrapper for logger."""
-        logger.info('%-8s %-28s %-13s %s' % (self.id_str, message, fname, self.controller.i2c_str))
+        logger.info('%-6s %-26s %-9s %s' % (self.id_str, message+str(msg or ''), fname, self.controller.i2c_str))
 
-    def get_hostname(self):
+    def get_hos(self):
         """Ask PPD for its hostname"""
-        fname='get_hostname'
+        fname='get_hos'
         #self.log_txn(fname,"querying device")
         with self.i2cdevice as i2cdevice:
             msg = bytearray(BUFCLR)
@@ -116,14 +122,14 @@ class PPDevice():
                 msg = bytearray(int.from_bytes(msg, byteorder))
                 i2cdevice.readinto(msg)
                 self.lastonline=datetime.now()
-                self.log_txn(fname,"recvd hostname",msg.decode())
+                self.log_txn(fname,"recvd hostname ",msg.decode())
             except OSError:
                 pass
         return msg.decode()
 
-    def get_datetime(self):
+    def get_tim(self):
         """Ask PPD for its datetime"""
-        fname='get_datetime'
+        fname='get_tim'
         #self.log_txn(fname,"querying device")
         with self.i2cdevice as i2cdevice:
             msg = bytearray(BUFCLR)
@@ -136,15 +142,15 @@ class PPDevice():
             try:
                 i2cdevice.write_then_readinto(TIM,msg)
                 self.lastonline=datetime.now()
-                self.log_txn(fname,"recvd datetime",int.from_bytes(bytes(msg),byteorder))
+                self.log_txn(fname,"recvd datetime: ",int.from_bytes(bytes(msg),byteorder))
                 return datetime.fromtimestamp((int.from_bytes(bytes(msg),byteorder)))
             except OSError:
                 pass
         return None
 
-    def get_bosmang(self):
+    def get_bos(self):
         """Ask PPD for its bosmang status (bool)"""
-        fname='get_bosmang'
+        fname='get_bos'
         #self.log_txn(fname,"querying device")
         with self.i2cdevice as i2cdevice:
             msg = bytearray(BUFCLR)
@@ -158,15 +164,15 @@ class PPDevice():
                 i2cdevice.write_then_readinto(BOS,msg)
                 self.lastonline=datetime.now()
                 self.controller.bosmang = self.device_address
-                self.log_txn(fname,"recvd bosmang status:",bool(msg.decode()))
+                self.log_txn(fname,"recvd bosmang status: ",bool(msg.decode()))
                 return bool(int.from_bytes(bytes(msg),byteorder))
             except OSError:
                 pass
         return None
 
-    def get_timezone(self):
+    def get_tzn(self):
         """Ask PPD for its timezone (in seconds offset from utc)"""
-        fname='get_timezone'
+        fname='get_tzn'
         #self.log_txn(fname,"querying device")
         with self.i2cdevice as i2cdevice:
             msg = bytearray(BUFCLR)
@@ -179,15 +185,15 @@ class PPDevice():
             try:
                 i2cdevice.write_then_readinto(TZO,msg)
                 self.lastonline=datetime.now()
-                self.log_txn(fname,"recvd utcoffset",int.from_bytes(bytes(msg),byteorder))
+                self.log_txn(fname,"recvd utcoffset: ",int.from_bytes(bytes(msg),byteorder))
                 return int.from_bytes(bytes(msg),byteorder)
             except OSError:
                 pass
         return None
 
-    def get_loadavg(self):
+    def get_lod(self):
         """Ask PPD for its load average"""
-        fname='get_loadavg'
+        fname='get_lod'
         #self.log_txn(fname,"querying device")
         with self.i2cdevice as i2cdevice:
             msg = bytearray(BUFCLR)
@@ -200,17 +206,17 @@ class PPDevice():
             try:
                 i2cdevice.write_then_readinto(LOD,msg)
                 self.lastonline=datetime.now()
-                self.log_txn(fname,"recvd loadavg:",msg.decode())
+                self.log_txn(fname,"recvd loadavg: ",msg.decode())
                 return msg.decode()
             except OSError:
                 pass
         return None
 
-    def get_uart_rx(self):
+    def get_urx(self):
         """Ask PPD for the MCU board pin where its UART RX is connected"""
         return self.uart_rx
 
-    def get_uart_tx(self):
+    def get_utx(self):
         """Ask PPD for the MCU board pin where its UART TX is connected"""
         return self.uart_tx
 
@@ -223,19 +229,19 @@ class PPController():
     peripherals are `PPDevice`s."""
     def __init__(self, **kwargs):
         self.i2c       = None
-        self.scl       = kwargs.pop('scl', board.SDA)
+        self.scl       = kwargs.pop('scl', board.SCL)
         self.sda       = kwargs.pop('sda', board.SDA)
         self.frequency = kwargs.pop('frequency', 4800)
         self.timeout   = kwargs.pop('timeout', 10000)
         self.bosmang   = kwargs.pop('bosmang', None)
-        """PPDevice device_address selected to recieve datetime & control instructions from,
-           have UART connected for passthru, etc. Default is `None`."""
+        """type: int PPDevice device_address selected to recieve datetime & control
+           instructions from, have UART connected for passthru, etc.."""
         self.datetime  = None
         """to receive datetime from bosmang & to check for datetime skew on other devices."""
         self.utcoffset = None
         self.clock     = RTC()
 
-        self.PPDs      = []
+        self.ppds      = []
         """PPDevice objects belonging to PPController object."""
         self.noident   = []
         """UNDevice objects belonging to PPController object."""
@@ -247,8 +253,8 @@ class PPController():
 
     def log_txn(self, fname, message, hexaddr=None, msg=None):
         """Wrapper for logger."""
-        id_str = type(self).__name__[0:3]+": "+str(hexaddr or '    ')+" "
-        logger.info('%-8s %-28s %-13s %s' % (id_str, message, fname, self.i2c_str))
+        id_str = type(self).__name__[2]+" "+str(hexaddr or '    ')
+        logger.info('%-6s %-26s %-9s %s' % (id_str, message+str(msg or ''), fname, self.i2c_str))
 
     def i2c_scan(self):
         """Scan the I2C bus and create I2CDevice objects for each peripheral."""
@@ -258,16 +264,16 @@ class PPController():
         self.log_txn(fname,">>> SCANNING I2C bus <<<")
 
         for addr in self.i2c.scan():
-            if not any(d.device_address == addr for d in chain(self.PPDs,self.noident,self.othrdev)):
+            if not any(d.device_address == addr for d in chain(self.ppds,self.noident,self.othrdev)):
                 self.noident.append(UNDevice(controller=self,device_address=addr))
                 self.noident[-1].i2cdevice=i2c_device.I2CDevice(self.i2c,device_address=addr,probe=False)
                 self.log_txn(fname,"added I2C peripheral",hex(addr))
         self.i2c.unlock()
         return True
 
-    def identify_ppds(self):
+    def idf_ppds(self):
         """Identify PPDs from among all unidentified I2CDevices"""
-        fname='identify_ppds'
+        fname='idf_ppds'
         i = 0
         while i < len(self.noident):
             addr = self.noident[i].device_address
@@ -285,14 +291,14 @@ class PPController():
                 except OSError:
                     self.log_txn(fname,"WRITE FAILED",hex(addr))
                 if msg == IDENTITY:
-                    self.PPDs.append(PPDevice(controller=self,device_address=addr))
-                    self.PPDs[-1].i2cdevice = unident
-                    self.PPDs[-1].lastonline=datetime.now()
+                    self.ppds.append(PPDevice(controller=self,device_address=addr))
+                    self.ppds[-1].i2cdevice = unident
+                    self.ppds[-1].lastonline=datetime.now()
                     del self.noident[i]
-                    self.log_txn(fname,">>>  added PPDevice <<<",hex(addr))
+                    self.log_txn(fname,">>>  added PPDevice  <<<",hex(addr))
                 else:
                     self.noident[i].retries += 1
-                    self.log_txn(fname,"ID FAILED on try",hex(addr),self.noident[i].retries)
+                    self.log_txn(fname,"ID FAILED on try ",hex(addr),self.noident[i].retries)
                     if self.noident[i].retries >= self.noident[i].retries_max:
                         self.log_txn(fname,"max retries; releasing",hex(addr))
                         self.othrdev.append(self.noident.pop(i))
@@ -301,44 +307,57 @@ class PPController():
                         i += 1
 
     def add_ppds(self):
-        """Wrapper for `i2c_scan` + `identify_ppds`."""
+        """Wrapper for `i2c_scan` + `idf_ppds`."""
         fname='add_ppds'
         self.log_txn(fname,'    function called')
         self.i2c_scan()
         if self.noident:
-            self.log_txn(fname,"found new peripherals:",'',len(self.noident))
-            self.identify_ppds()
+            self.log_txn(fname,"found new peripherals: ",'',len(self.noident))
+            self.idf_ppds()
 
-    def query_ppds(self):
+    def qry_ppds(self):
         """Ask all PPDs for all of their metadata & stats."""
-        fname='query_ppds'
+        fname='qry_ppds'
         self.log_txn(fname,'    function called')
-        for ppd in self.PPDs:
-            ppd.datetime  = ppd.get_datetime()
-            ppd.utcoffset = ppd.get_timezone()
-            ppd.bosmang   = ppd.get_bosmang()
+        for ppd in self.ppds:
+            ppd.datetime  = ppd.get_tim()
+            ppd.utcoffset = ppd.get_tzn()
+            ppd.bosmang   = ppd.get_bos()
             if ppd.bosmang:
-                self.set_datetime(ppd.datetime.timetuple())
-            ppd.hostname  = ppd.get_hostname()
-            ppd.loadavg   = ppd.get_loadavg()
-            ppd.UART_RX   = ppd.get_uart_rx()
-            ppd.UART_TX   = ppd.get_uart_tx()
+                self.set_rtc(ppd.datetime.timetuple())
+            ppd.hostname  = ppd.get_hos()
+            ppd.loadavg   = ppd.get_lod()
+            ppd.uart_rx   = ppd.get_urx()
+            ppd.uart_tx   = ppd.get_utx()
             ppd.PEN       = ppd.get_pen()
 
-    def set_datetime(self,timetuple):
+    def png_ppds(self):
+        """Ask all PPDs for their essential stats."""
+        fname='png_ppds'
+        self.log_txn(fname,'    function called')
+        for ppd in self.ppds:
+            ppd.loadavg   = ppd.get_lod()
+
+    def png_bos(self):
+        """Ask bosmang for commands."""
+        fname='png_bos'
+        self.log_txn(fname,'pinging bosmang',hex(self.bosmang.device_address))
+        cmd = self.bosmang.get_cmd()
+
+    def set_rtc(self,timetuple):
         """Set the MCU's realtime clock."""
-        fname='set_datetime'
+        fname='set_rtc'
         self.clock.datetime = timetuple
         self.log_txn(fname,str(datetime.now()))
 
     def get_ppd(self, device_address=None, hostname=None):
         """"""
         if device_address:
-            dlist = list(filter(lambda d: d.device_address == device_address, self.PPDs))
+            dlist = list(filter(lambda d: d.device_address == device_address, self.ppds))
             if dlist:
                 return dlist[0]
         if hostname:
-            dlist = list(filter(lambda d: d.hostname == hostname, self.PPDs))
+            dlist = list(filter(lambda d: d.hostname == hostname, self.ppds))
             if dlist:
                 return dlist[0]
         return None

@@ -14,10 +14,13 @@ index = {"UNDevice": "00_core.ipynb",
          "BOS": "00_core.ipynb",
          "LOD": "00_core.ipynb",
          "TZO": "00_core.ipynb",
-         "PEN": "00_core.ipynb"}
+         "PEN": "00_core.ipynb",
+         "ReportData": "20_reports.ipynb",
+         "stats_struct": "20_reports.ipynb"}
 
 modules = ["core.py",
-           "schedule.py"]
+           "schedule.py",
+           "reports.py"]
 
 doc_url = "https://durapensa.github.io/CircuitPython_pico_pi_controller/"
 
