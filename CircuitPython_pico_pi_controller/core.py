@@ -33,23 +33,21 @@ except ModuleNotFoundError:
     logger = logging.getLogger()
     logging.basicConfig(level = logging.DEBUG)
 
-
-
 # Cell
-IDENTITY = bytearray(([ord(c) for c in list('ppcd')]))
-"""identifier string used by RPi devices"""
+IDENTITY = bytearray(([ord(c) for c in list('ppdd')]))
+"""identifier string used by RPi(s) running PP device daemon"""
 
 BUFCLR = 16
 """number of bytes to clear from the sender's TX buffer"""
 
-CLR = bytearray(); CLR.append(ord('C')) # request clear transmit FIFO
-IDF = bytearray(); IDF.append(ord('I')) # request to send [str] identification
-HOS = bytearray(); HOS.append(ord('H')) # request to send [str] hostname
-TIM = bytearray(); TIM.append(ord('T')) # request to send [int] datetime
-BOS = bytearray(); BOS.append(ord('B')) # request to send [bool] bosmang status
-LOD = bytearray(); LOD.append(ord('L')) # request to send [int] load
-TZO = bytearray(); TZO.append(ord('Z')) # request to send [int] timezone (sec offset from UTC)
-PEN = bytearray(); PEN.append(ord('P')) # request to send [int] MCU pin connected to RPi PEN
+CLR = bytearray([ord('C')]) # request clear transmit FIFO
+IDF = bytearray([ord('I')]) # request to send [str] identification
+HOS = bytearray([ord('H')]) # request to send [str] hostname
+TIM = bytearray([ord('T')]) # request to send [int] datetime
+BOS = bytearray([ord('B')]) # request to send [bool] bosmang status
+LOD = bytearray([ord('L')]) # request to send [int] load
+TZO = bytearray([ord('Z')]) # request to send [int] timezone (sec offset from UTC)
+PEN = bytearray([ord('P')]) # request to send [int] MCU pin connected to RPi PEN
 
 class UNDevice():
     """Represents an I2C peripheral device unidentified to a `PPController`"""
@@ -72,9 +70,6 @@ class PPDevice():
         self.i2cdevice      = None
         """The I2CDevice created by a PPController."""
 
-        self.retries     = 0
-        self.retries_max = 4
-        """retry count before I2CDevice is considered 'other', i.e. not a PPC device."""
         self.lastonline  = None
         """type: datetime A controller time-stamp updated with each successful receive.
            reports & bosmang can decide what to do with this info."""
@@ -233,21 +228,31 @@ class PPController():
         self.sda       = kwargs.pop('sda', board.SDA)
         self.frequency = kwargs.pop('frequency', 4800)
         self.timeout   = kwargs.pop('timeout', 10000)
+
         self.bosmang   = kwargs.pop('bosmang', None)
         """type: int PPDevice device_address selected to recieve datetime & control
-           instructions from, have UART connected for passthru, etc.."""
+           instructions from, have UART connected for passthru, etc. If set, bosmang
+           will be the first PPDevice contacted and MCU RTC will be set at the earliest
+           possible time."""
+
         self.datetime  = None
         """to receive datetime from bosmang & to check for datetime skew on other devices."""
         self.utcoffset = None
         self.clock     = RTC()
 
         self.ppds      = []
-        """PPDevice objects belonging to PPController object."""
+        """PPDevice objects belonging to a PPController object."""
         self.noident   = []
-        """UNDevice objects belonging to PPController object."""
+        """UNDevice objects belonging to a PPController object."""
         self.othrdev   = []
         """UNDevice objects without I2CDevices (address record only)
            recognized as 'other' peripherals"""
+
+        if self.bosmang:
+            self.ppds.append(PPDevice(controller=self,device_address=bosmang))
+            self.ppds[0].i2cdevice=i2c_device.I2CDevice(self.i2c,device_address=bosmang,probe=False)
+            self.bosmang_lok = True
+            qry_ppds()
 
         self.i2c_str = str(self.scl).strip('board.')+"/"+str(self.sda).strip('board.')
 
@@ -316,20 +321,27 @@ class PPController():
             self.idf_ppds()
 
     def qry_ppds(self):
-        """Ask all PPDs for all of their metadata & stats."""
+        """Ask all PPDs for all of their metadata & stats.
+           Note that certain metadata, once set, can be changed only via command."""
         fname='qry_ppds'
         self.log_txn(fname,'    function called')
         for ppd in self.ppds:
-            ppd.datetime  = ppd.get_tim()
-            ppd.utcoffset = ppd.get_tzn()
-            ppd.bosmang   = ppd.get_bos()
+            if not ppd.bosmang and not ppd.bosmang_lok:
+                ppd.bosmang   = ppd.get_bos()
+            ppd.datetime      = ppd.get_tim()
             if ppd.bosmang:
                 self.set_rtc(ppd.datetime.timetuple())
-            ppd.hostname  = ppd.get_hos()
-            ppd.loadavg   = ppd.get_lod()
-            ppd.uart_rx   = ppd.get_urx()
-            ppd.uart_tx   = ppd.get_utx()
-            ppd.PEN       = ppd.get_pen()
+            if not ppd.uart_rx:
+                ppd.uart_rx   = ppd.get_urx()
+            if not ppd.uart_tx:
+                ppd.uart_tx   = ppd.get_utx()
+            if not ppd.pen:
+                ppd.PEN       = ppd.get_pen()
+            if not ppd.hostname:
+                ppd.hostname  = ppd.get_hos()
+            if not ppd.utcoffset:
+                ppd.utcoffset = ppd.get_tzn()
+            ppd.loadavg       = ppd.get_lod()
 
     def png_ppds(self):
         """Ask all PPDs for their essential stats."""
@@ -341,8 +353,8 @@ class PPController():
     def png_bos(self):
         """Ask bosmang for commands."""
         fname='png_bos'
-        self.log_txn(fname,'pinging bosmang',hex(self.bosmang.device_address))
-        cmd = self.bosmang.get_cmd()
+        self.log_txn(fname,'pinging bosmang',hex(self.bosmang))
+        cmd = self.get_ppd(device_aaddress=bosmang).get_cmd()
 
     def set_rtc(self,timetuple):
         """Set the MCU's realtime clock."""
