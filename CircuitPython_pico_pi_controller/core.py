@@ -6,6 +6,7 @@ __all__ = ['UNDevice', 'PPDevice', 'PPController', 'IDENTITY', 'BUFCLR', 'CLR', 
 # Cell
 from sys import byteorder, modules
 import board
+from busio import I2C
 from adafruit_bus_device import i2c_device
 try:
     from rtc import RTC
@@ -118,9 +119,10 @@ class PPDevice():
                 i2cdevice.readinto(msg)
                 self.lastonline=datetime.now()
                 self.log_txn(fname,"recvd hostname ",msg.decode())
+                return msg.decode()
             except OSError:
                 pass
-        return msg.decode()
+        return None
 
     def get_tim(self):
         """Ask PPD for its datetime"""
@@ -158,7 +160,6 @@ class PPDevice():
             try:
                 i2cdevice.write_then_readinto(BOS,msg)
                 self.lastonline=datetime.now()
-                self.controller.bosmang = self.device_address
                 self.log_txn(fname,"recvd bosmang status: ",bool(msg.decode()))
                 return bool(int.from_bytes(bytes(msg),byteorder))
             except OSError:
@@ -223,17 +224,21 @@ class PPController():
     """Represents one of the system's I2C busses and tracks which I2C
     peripherals are `PPDevice`s."""
     def __init__(self, **kwargs):
-        self.i2c       = None
+        fname='__init__'
         self.scl       = kwargs.pop('scl', board.SCL)
         self.sda       = kwargs.pop('sda', board.SDA)
         self.frequency = kwargs.pop('frequency', 4800)
         self.timeout   = kwargs.pop('timeout', 10000)
+
+        self.i2c       = I2C(scl=self.scl, sda=self.sda, frequency=self.frequency, timeout=self.timeout)
 
         self.bosmang   = kwargs.pop('bosmang', None)
         """type: int PPDevice device_address selected to recieve datetime & control
            instructions from, have UART connected for passthru, etc. If set, bosmang
            will be the first PPDevice contacted and MCU RTC will be set at the earliest
            possible time."""
+        if kwargs:
+            raise TypeError('Unepxected kwargs provided: %s' % list(kwargs.keys()))
 
         self.datetime  = None
         """to receive datetime from bosmang & to check for datetime skew on other devices."""
@@ -248,13 +253,16 @@ class PPController():
         """UNDevice objects without I2CDevices (address record only)
            recognized as 'other' peripherals"""
 
-        if self.bosmang:
-            self.ppds.append(PPDevice(controller=self,device_address=bosmang))
-            self.ppds[0].i2cdevice=i2c_device.I2CDevice(self.i2c,device_address=bosmang,probe=False)
-            self.bosmang_lok = True
-            qry_ppds()
-
         self.i2c_str = str(self.scl).strip('board.')+"/"+str(self.sda).strip('board.')
+
+        self.bosmang_lok = None
+        if self.bosmang:
+            self.ppds.append(PPDevice(controller=self,device_address=self.bosmang))
+            self.ppds[0].i2cdevice=i2c_device.I2CDevice(self.i2c,device_address=self.bosmang,probe=False)
+            self.ppds[0].bosmang = True
+            self.bosmang_lok = True
+            self.log_txn(fname,'>>> BOSMANG set, lok <<<',hex(self.bosmang))
+            self.qry_ppds()
 
     def log_txn(self, fname, message, hexaddr=None, msg=None):
         """Wrapper for logger."""
@@ -282,9 +290,9 @@ class PPController():
         i = 0
         while i < len(self.noident):
             addr = self.noident[i].device_address
+            msg = bytearray(BUFCLR)
             self.log_txn(fname,"querying I2C peripheral",hex(addr))
             with self.noident[i].i2cdevice as unident:
-                msg = bytearray(BUFCLR)
                 try:
                     unident.write_then_readinto(CLR,msg)
                     """Clear the i2c peripheral's TX FIFO"""
@@ -310,6 +318,8 @@ class PPController():
                         del self.othrdev[-1].i2cdevice
                     else:
                         i += 1
+            if msg == IDENTITY:
+                self.qry_ppds([self.ppds[-1]])
 
     def add_ppds(self):
         """Wrapper for `i2c_scan` + `idf_ppds`."""
@@ -320,17 +330,25 @@ class PPController():
             self.log_txn(fname,"found new peripherals: ",'',len(self.noident))
             self.idf_ppds()
 
-    def qry_ppds(self):
+    def qry_ppds(self,ppds=None):
         """Ask all PPDs for all of their metadata & stats.
            Note that certain metadata, once set, can be changed only via command."""
         fname='qry_ppds'
-        self.log_txn(fname,'    function called')
-        for ppd in self.ppds:
-            if not ppd.bosmang and not ppd.bosmang_lok:
+        #self.log_txn(fname,'    function called')
+        for ppd in ppds or self.ppds:
+            #self.log_txn(fname,'current bosmang: ',None,hex(self.bosmang or 0))
+            self.log_txn(fname,'current bosmang: ',None,hex(self.bosmang) if self.bosmang is not None else 'None')
+            if not self.bosmang_lok:
                 ppd.bosmang   = ppd.get_bos()
             ppd.datetime      = ppd.get_tim()
             if ppd.bosmang:
                 self.set_rtc(ppd.datetime.timetuple())
+                if not self.bosmang:
+                    self.bosmang  = ppd.device_address
+                    self.log_txn(fname,'>>> BOSMANG assigned <<<',hex(self.bosmang))
+                elif self.bosmang != ppd.device_address:
+                    self.bosmang  = ppd.device_address
+                    self.log_txn(fname,'>>> BOSMANG changed! <<<',hex(self.bosmang))
             if not ppd.uart_rx:
                 ppd.uart_rx   = ppd.get_urx()
             if not ppd.uart_tx:
@@ -338,7 +356,9 @@ class PPController():
             if not ppd.pen:
                 ppd.PEN       = ppd.get_pen()
             if not ppd.hostname:
-                ppd.hostname  = ppd.get_hos()
+                hos = ppd.get_hos()
+                if hos:
+                    ppd.hostname = hos
             if not ppd.utcoffset:
                 ppd.utcoffset = ppd.get_tzn()
             ppd.loadavg       = ppd.get_lod()
