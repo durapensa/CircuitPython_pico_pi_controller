@@ -22,9 +22,10 @@ except ModuleNotFoundError:
 
 # Cell
 stats_struct = {
+    'hostname'       : None,
+    'mcu_uid'        : None,
     'ppc_i2c_str'    : None,
     'device_address' : None,
-    'hostname'       : None,
     'lastonline'     : None,
     'loadavg'        : None,
     'bosmang'        : None,
@@ -33,7 +34,11 @@ stats_struct = {
 class ReportData():
     """Instances hold report data for PPDevices. Using this class,
        reports can be generated at any time without querrying PPDevices,
-       limited only by available memory."""
+       limited only by available memory.
+       Note that hosthame, mcu_uid & ppc_i2c_str are sent to bosmang separately
+       as they have variable lengths, and thus are omitted from the stats_struct
+       when sent but re-incorporated after the truncated stats_struct is
+       received."""
     def __init__(self, ppds):
         self.ppds  = ppds
         self.stats = []
