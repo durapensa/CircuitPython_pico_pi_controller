@@ -46,10 +46,10 @@ class ReportData():
     def log_txn(self, fname, message, hexaddr=None, msg=None, i2c_str=None):
         """Wrapper for logger."""
         id_str = type(self).__name__[0]+" "+str(hexaddr or '    ')
-        logger.info('%-6s %-26s %-9s %s' % (id_str, message+str(msg or ''), fname, ''))
+        logger.info('%-6s %-27s %-9s %s' % (id_str, message+str(msg or ''), fname, i2c_str))
 
-    def get_stats(self):
-        fname='get_stats'
+    def get_stat(self):
+        fname='get_stat'
         for ppd in self.ppds:
             if not any(d.device_address == ppd.device_address for d in self.stats):
                 dstats = stats_struct

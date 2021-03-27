@@ -47,11 +47,15 @@ nb_path: "20_reports.ipynb"
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h2 id="ReportData" class="doc_header"><code>class</code> <code>ReportData</code><a href="https://github.com/durapensa/CircuitPython_pico_pi_controller/tree/main/CircuitPython_pico_pi_controller/reports.py#L33" class="source_link" style="float:right">[source]</a></h2><blockquote><p><code>ReportData</code>(<strong><code>ppds</code></strong>)</p>
+<h2 id="ReportData" class="doc_header"><code>class</code> <code>ReportData</code><a href="https://github.com/durapensa/CircuitPython_pico_pi_controller/tree/main/CircuitPython_pico_pi_controller/reports.py#L34" class="source_link" style="float:right">[source]</a></h2><blockquote><p><code>ReportData</code>(<strong><code>ppds</code></strong>)</p>
 </blockquote>
 <p>Instances hold report data for PPDevices. Using this class,
 reports can be generated at any time without querrying PPDevices,
-limited only by available memory.</p>
+limited only by available memory.
+Note that hosthame, mcu_uid &amp; ppc_i2c_str are sent to bosmang separately
+as they have variable lengths, and thus are omitted from the stats_struct
+when sent but re-incorporated after the truncated stats_struct is
+received.</p>
 
 </div>
 
