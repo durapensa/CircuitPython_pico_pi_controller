@@ -3,6 +3,7 @@
 __all__ = ['UNDevice', 'PPDevice', 'PPController', 'ID_CODE', 'REG_CODE', 'CMD_CODE', 'BUF_CLR']
 
 # Cell
+from time import sleep
 from sys import byteorder
 import board
 import microcontroller
@@ -46,14 +47,15 @@ REG_CODE = {
     'CMD': bytearray([ord('C')]), # request to send [int]  Command
     'HOS': bytearray([ord('H')]), # request to send [str]  Hostname
     'LOD': bytearray([ord('L')]), # request to send [int]  Load
+    'UPT': bytearray([ord('U')]), # request to send [int]  Uptime
     'TZO': bytearray([ord('Z')]), # request to send [int]  timeZone (sec offset from UTC)
     'PEN': bytearray([ord('P')]), # request to send [int]  MCU pin connected to RPi PEN
-    'MSG': bytearray([ord('M')]), # request to receive [int+str] message for display
-    'NAM': bytearray([ord('N')]), # request to receive [int+int+str] PPD name
-    'ICS': bytearray([ord('S')]), # request to receive [int+str] PPC I2C_str
-    'UID': bytearray([ord('U')]), # request to receive [int+bytearray] PPC microcontroller.cpu.uid
+    'UID': bytearray([ord('V')]), # request to receive [int+bytearray] PPC len,microcontroller.cpu.uid
+    'ICS': bytearray([ord('S')]), # request to receive [int+str] PPC len,I2C_str
+    'NAM': bytearray([ord('N')]), # request to receive [int+int+str] PPD addr,hostname
     'RPT': bytearray([ord('R')]), # request to receive [int] report data for N PPDs
-    'PPD': bytearray([ord('D')]), # request to receive [int+int+str] individual PPD report
+    'PPD': bytearray([ord('D')]), # request to receive [int+int+str] PPD report addr,len,pack
+    'MSG': bytearray([ord('M')]), # request to receive [int+str] message for display
     'RBT': bytearray([252]),      # request to REBOOT
     'SDN': bytearray([253]),      # request to SHUTDOWN
     'ONN': bytearray([254]),      # request to POWERON
@@ -62,13 +64,13 @@ REG_CODE = {
 
 CMD_CODE = (
     (  0, 'NOP',        0), # no command, not used
-    ( 97, 'OFFLINE',    1), # confirm
-    ( 98, 'ONLINE',     1), # confirm
-    ( 99, 'DEREGISTER', 1), # confirm
-    (100, 'HOSTNAME',   1), # confirm
-    (101, 'MIBOSMANG',  1), # confirm
+    ( 97, 'OFFLINE',    1), # device_address, confirm
+    ( 98, 'ONLINE',     1), # device_address, confirm
+    ( 99, 'DEREGISTER', 1), # device_address, confirm
+    (100, 'HOSTNAME',   1), # number of bytes in hostname
+    (101, 'MIBOSMANG',  1), # confirm # can be executed only from host to become bosmang
 
-    (225, 'FLICKER',    1), # duration
+    (225, 'FLICKER',    2), # device_address, duration
     (226, 'ROUNDROBIN', 1), # duration
     (227, 'REPORT',     1), # number of PPDs
 
@@ -130,6 +132,7 @@ class PPDevice():
            to check for datetime skew on other devices."""
         self.utcoffset  = None
         self.loadavg    = None
+        self.uptime     = None
 
         self.id_str = type(self).__name__[2]+" "+str(hex(self.device_address))
 
@@ -139,11 +142,22 @@ class PPDevice():
 
     def dcd_cmd(cmd_code=None,cmd_name=None):
         "Decode command codes from cmd_code or cmd_name"
-        if device_address:
+        if cmd_code:
             clist = list(filter(lambda ctuple: ctuple[0] == cmd_code, self.CMD_CODE))
             if clist:
                 return clist[0]
+        if cmd_name:
+            clist = list(filter(lambda ctuple: ctuple[1] == cmd_name, self.CMD_CODE))
+            if clist:
+                return clist[0]
         return None
+
+    @staticmethod
+    def dcd_sec(seconds):
+        minutes, seconds = divmod(seconds, 60)
+        hours, minutes = divmod(minutes, 60)
+        days, hours = divmod(hours, 24)
+        return days, hours, minutes, seconds
 
     def get_hos(self):
         """Ask PPD for its hostname"""
@@ -279,6 +293,35 @@ class PPDevice():
                 self.lastonline=datetime.now()
                 self.log_txn(fname,"recvd loadavg: ","{:04.2f}".format(float(msg.decode())))
                 return msg.decode()
+            except OSError:
+                pass
+        return None
+
+    def get_upt(self):
+        """Ask PPD for its uptime in seconds"""
+        fname='get_upt'
+        #self.log_txn(fname,"querying device")
+        with self.i2cdevice as i2cdevice:
+            msg = bytearray(BUF_CLR)
+            try:
+                i2cdevice.write_then_readinto(REG_CODE['CLR'],msg)
+                """Clear the i2c peripheral's transmit FIFO"""
+            except OSError:
+                pass
+            msg = bytearray(1)
+            try:
+                i2cdevice.write_then_readinto(REG_CODE['UPT'],msg)
+                #"""Read one byte so we can pause for PPD to get uptime"""
+                #self.log_txn(fname,"pause for uptime")
+                #sleep(0.4)
+                msg = bytearray(4)
+                i2cdevice.readinto(msg)
+                self.lastonline=datetime.now()
+                self.log_txn(fname,"recvd uptime: ",int.from_bytes(bytes(msg),byteorder))
+                #self.log_txn(fname,"recvd uptime: ",str(int.from_bytes(bytes(msg),byteorder))+' secs')
+                #self.log_txn(fname,"uptime: ",str(int.from_bytes(bytes(msg),byteorder)/60/60/24)+' days')
+                self.log_txn(fname,"uptime: %d d %d:%d" % self.dcd_sec(int.from_bytes(bytes(msg),byteorder))[:3])
+                return int.from_bytes(bytes(msg),byteorder)
             except OSError:
                 pass
         return None
@@ -442,6 +485,7 @@ class PPController():
             if not ppd.utcoffset:
                 ppd.utcoffset = ppd.get_tzn()
             ppd.loadavg       = ppd.get_lod()
+            ppd.uptime        = ppd.get_upt()
 
     def png_ppds(self,ppds=None):
         """Ask PPDs for queued commands & essential stats."""
