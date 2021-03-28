@@ -7,8 +7,8 @@ index = {"UNDevice": "00_core.ipynb",
          "PPController": "00_core.ipynb",
          "ID_CODE": "00_core.ipynb",
          "REG_CODE": "00_core.ipynb",
+         "REG_VAL_LEN": "00_core.ipynb",
          "CMD_CODE": "00_core.ipynb",
-         "BUF_CLR": "00_core.ipynb",
          "ReportData": "20_reports.ipynb",
          "stats_struct": "20_reports.ipynb"}
 
