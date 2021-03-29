@@ -49,21 +49,23 @@ REG_CODE = {
     'UPT': bytearray([ord('U')]), # request to send [int]  Uptime
     'TZN': bytearray([ord('Z')]), # request to send [int]  timeZone (sec offset from UTC)
     'PEN': bytearray([ord('P')]), # request to send [int]  MCU pin connected to RPi PEN
-    'UID': bytearray([ord('V')]), # request to receive [int+bytearray] PPC len,microcontroller.cpu.uid
-    'ICS': bytearray([ord('2')]), # request to receive [int+str] PPC len,I2C_str
-    'MSG': bytearray([ord('M')]), # request to receive [int+str] message for display
-    'REG': bytearray([ord('R')]), # request to receive [int+int+variable_len] PPD addr, REG_CODE, value
-    'NAM': bytearray([ord('N')]), # request to receive [int+int+str] PPD addr,hostname (shorter than REG)
-    'RPT': bytearray([ord('S')]), # request to receive [int] stats report data for N PPDs
-    'PPD': bytearray([ord('D')]), # request to receive [int+int+str] PPD report addr,len,pack?
+
+    'FLK': bytearray([ord('K')]), # command to flicker [int] PWR LED for seconds [int]
+    'UID': bytearray([ord('V')]), # command to receive [int+bytearray] PPC len,microcontroller.cpu.uid
+    'ICS': bytearray([ord('2')]), # command to receive [int+str] PPC len,I2C_str
+    'MSG': bytearray([ord('M')]), # command to receive [int+str] message for display
+    'REG': bytearray([ord('R')]), # command to receive [int+int+variable_len] PPD addr, REG_CODE, value
+    'NAM': bytearray([ord('N')]), # command to receive [int+int+str] PPD addr,hostname (shorter than REG)
+    'RPT': bytearray([ord('S')]), # command to receive [int] stats report data for N PPDs
+    'PPD': bytearray([ord('D')]), # command to receive [int+int+str] PPD report addr,len,pack?
                                   # or use convention of R but send stored value without reg query
-    'RBT': bytearray([247]),      # request to REBOOT
-    'SDN': bytearray([248]),      # request to SHUTDOWN
-    'ONN': bytearray([249]),      # request to POWERON
-    'OFF': bytearray([250])}      # request to POWEROFF
+    'RBT': bytearray([247]),      # command to REBOOT
+    'SDN': bytearray([248]),      # command to SHUTDOWN
+    'ONN': bytearray([249]),      # command to POWERON
+    'OFF': bytearray([250])}      # command to POWEROFF
 """I2C Register codes for PPDevices"""
 
-REG_VAL_LEN = {# in bytes for first (sometimes only) read; + len for followon read
+REG_VAL_LEN = {# in bytes for first (sometimes only) read/write; + len for followon read/write
     'CLR': 16, # hardware transmit FIFO of RPi secondary I2C periph is 16 bytes
     'IDF': len(ID_CODE),
     'BOS': 1,  # len bosmang bool
@@ -74,6 +76,8 @@ REG_VAL_LEN = {# in bytes for first (sometimes only) read; + len for followon re
     'UPT': 4,  # len uptime seconds int
     'TZN': 3,  # len utcoffset seconds int
     'PEN': 1,  # len pin int of MCU GPIO connected to PIN
+
+    'FLK': 2,  # len cmd_code + duration int
     'UID': 1,  # len ACK + echo: len len(UID) + len(UID); set in PPController instance __init__
     'ICS': 1,  # len ACK + echo: len len(ICS) + len(ICS); set in PPController instance __init__
     'MSG': 1,  # len ACK + echo: len len(msg) + len(msg)
@@ -161,9 +165,8 @@ class PPDevice():
 
         self.hostname   = None
         """type: str"""
-        self.datetimetuple   = None
-        """type: datetime Converted from timestamp, used to send datetime as bosmang &
-           to check for datetime skew on other devices."""
+        self.timestamp   = None
+        """type: int Used to send datetime as bosmang &  to check for datetime skew on other devices."""
         self.utcoffset  = None
         """type: int"""
         self.loadavg    = None
@@ -232,7 +235,7 @@ class PPDevice():
         return None
 
     def get_tim(self):
-        """Ask PPD for its datetime in seconds since epoch, returns timetuple"""
+        """Ask PPD for its datetime in seconds since epoch, returns timestamp int"""
         fname='get_tim'
         #self.log_txn(fname,"querying device")
         with self.i2cdevice as i2cdevice:
@@ -241,8 +244,8 @@ class PPDevice():
             try:
                 i2cdevice.write_then_readinto(REG_CODE['TIM'],msg)
                 self.lastonline=int(datetime.now().timestamp())
-                self.log_txn(fname,"recvd datetime: ",int.from_bytes(bytes(msg),byteorder))
-                return datetime.fromtimestamp((int.from_bytes(bytes(msg),byteorder))).timetuple()
+                self.log_txn(fname,"recvd timestamp: ",int.from_bytes(bytes(msg),byteorder))
+                return int.from_bytes(bytes(msg),byteorder)
             except OSError:
                 pass
         return None
@@ -269,21 +272,22 @@ class PPDevice():
         #self.log_txn(fname,"querying device")
         with self.i2cdevice as i2cdevice:
             self.clr_fifo(i2cdevice)
-            msg = bytearray(REG_VAL_LEN['CMD'])
+            cmd = bytearray(REG_VAL_LEN['CMD'])
             try:
-                i2cdevice.write_then_readinto(REG_CODE['CMD'],msg)
+                i2cdevice.write_then_readinto(REG_CODE['CMD'],cmd)
                 """Get the command code or 0 for no command"""
-                cmd_code = int.from_bytes(bytes(msg),byteorder)
+                cmd_code = int.from_bytes(bytes(cmd),byteorder)
                 if cmd_code:
-                    self.log_txn(fname,"recvd command",msg.decode())
-                    #msg = self.dcd_cmd(cmd_code)
-                    #i2cdevice.readinto(msg)
+                    cmd_tup  = self.dcd_cmd(cmd_code)
+                    cmda = bytearray(cmd_tup[2])
+                    i2cdevice.readinto(cmda)
+                    self.log_txn(fname,"recvd command ",cmd_tup[1]+' '+str(hex(cmda[0])))
                     self.lastonline=int(datetime.now().timestamp())
-                    return cmd_code,msg.decode()
+                    return cmd+cmda
                 else:
                     self.lastonline=int(datetime.now().timestamp())
                     self.log_txn(fname,"recvd no command")
-                    return 0
+                    return None
             except OSError:
                 pass
         return None
@@ -352,6 +356,21 @@ class PPDevice():
         """Ask PPD for the MCU board pin where its PEN is connected"""
         return self.pen
 
+    def set_flkr(self, duration):
+        """Tell PPD to flicker its power LED for duration (seconds)"""
+        fname='set_flkr'
+        #self.log_txn(fname,"querying device")
+        with self.i2cdevice as i2cdevice:
+            self.clr_fifo(i2cdevice)
+            msg = REG_CODE['FLK'] + bytearray([duration])
+            try:
+                i2cdevice.write(msg)
+                self.log_txn(fname,'sent FLICKER: '+str(duration)+' seconds')
+                return True
+            except OSError:
+                pass
+        return None
+
 class PPController():
     """Represents one of the system's I2C busses and tracks which I2C
     peripherals are `PPDevice`s."""
@@ -372,8 +391,6 @@ class PPController():
         if kwargs:
             raise TypeError('Unepxected kwargs provided: %s' % list(kwargs.keys()))
 
-        self.datetimetuple  = None
-        """to receive datetime from bosmang & to check for datetime skew on other devices."""
         self.utcoffset = None
         self.clock     = RTC()
 
@@ -478,9 +495,9 @@ class PPController():
             #self.log_txn(fname,'current bosmang: ',None,hex(self.bosmang) if self.bosmang is not None else 'None')
             if not self.bosmang_lok:
                 ppd.bosmang   = ppd.get_bos()
-            ppd.datetimetuple = ppd.get_tim()
-            if ppd.bosmang and ppd.datetimetuple:
-                self.set_rtc(ppd.datetimetuple)
+            ppd.timestamp = ppd.get_tim()
+            if ppd.bosmang and ppd.timestamp:
+                self.set_rtc(ppd.timestamp)
                 if not self.bosmang:
                     self.bosmang  = ppd.device_address
                     self.log_txn(fname,'>>>  BOSMANG assigned  <<<',hex(self.bosmang))
@@ -505,15 +522,17 @@ class PPController():
     def png_ppds(self,ppds=None):
         """Pings PPDs for queued commands & essential stats; pings all PPDs by default. """
         fname='png_ppds'
-        self.log_txn(fname,'pinging PPDevices')
+        self.log_txn(fname,'>>> Pinging PPDevices <<<')
         for ppd in ppds or self.ppds:
+            ppd.loadavg   = ppd.get_lod()
             ppd.command   = ppd.get_cmd()
-            ppd.loadavg       = ppd.get_lod()
+            if isinstance(ppd.command, bytearray):
+                self.cmd_hndlr(ppd)
 
-    def set_rtc(self,timetuple):
+    def set_rtc(self,timestamp):
         """Set the MCU's realtime clock."""
         fname='set_rtc'
-        self.clock.datetime = timetuple
+        self.clock.datetime = datetime.fromtimestamp(timestamp).timetuple()
         self.log_txn(fname,str(datetime.now()))
 
     def get_ppd(self, device_address=None, hostname=None):
@@ -527,3 +546,11 @@ class PPController():
             if dlist:
                 return dlist[0]
         return None
+
+    def cmd_hndlr(self, ppd):
+        fname='cmd_hndlr'
+        """Handle a command sent by a PPDevice."""
+        if ppd.command[0] == ppd.dcd_cmd(cmd_name='FLICKER')[0]:
+            self.log_txn(fname,str(ppd.command))
+            self.get_ppd(device_address=ppd.command[1]).set_flkr(ppd.command[2])
+        ppd.command = None
