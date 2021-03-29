@@ -12,11 +12,6 @@ Introduction
     :target: https://github.com/durapensa/CircuitPython_pico_pi_controller/actions
     :alt: Build Status
 
-
-.. image:: https://img.shields.io/badge/code%20style-black-000000.svg
-    :target: https://github.com/psf/black
-    :alt: Code Style: Black
-
 CircuitPython library for Pi SBCs to be monitored & controlled by a microcontroller board, e.g. a Pi Pico, using i2c.
 
 

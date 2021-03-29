@@ -13,7 +13,10 @@ entries:
       title: CircuitPython_pico_pi_controller
       url: core.html
     - output: web,pdf
-      title: Title
+      title: CircuitPython_pico_pi_controller.schedule
+      url: schedule.html
+    - output: web,pdf
+      title: CircuitPython_pico_pi_controller.reports
       url: reports.html
     output: web
     title: CircuitPython_pico_pi_controller
