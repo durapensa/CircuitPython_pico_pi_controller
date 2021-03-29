@@ -3,12 +3,11 @@
 __all__ = ['UNDevice', 'PPDevice', 'PPController', 'ID_CODE', 'REG_CODE', 'REG_VAL_LEN', 'CMD_CODE']
 
 # Cell
-from time import sleep
 from sys import byteorder
 import board
 import microcontroller
 from busio import I2C
-from adafruit_bus_device import i2c_device
+from adafruit_bus_device.i2c_device import I2CDevice
 try:
     from rtc import RTC
 except ModuleNotFoundError:
@@ -64,28 +63,28 @@ REG_CODE = {
     'OFF': bytearray([250])}      # request to POWEROFF
 """I2C Register codes for PPDevices"""
 
-REG_VAL_LEN = {  # in bytes for first (sometimes only) read; + len for followon read
-    'CLR': 16, # hardware FIFO of RPi 2nd I2C is 16 bytes
+REG_VAL_LEN = {# in bytes for first (sometimes only) read; + len for followon read
+    'CLR': 16, # hardware transmit FIFO of RPi secondary I2C periph is 16 bytes
     'IDF': len(ID_CODE),
-    'BOS': 1, # len bosmang bool
-    'TIM': 4, # len timestamp int
-    'CMD': 1, # len cmd_code + bytes in CMD_CODE
-    'HOS': 1, # len hostname + hostname
-    'LOD': 4, # len loadavg string from float
-    'UPT': 4, # len uptime seconds int
-    'TZN': 3, # len utcoffset seconds int
-    'PEN': 1, # len pin of MCU GPIO connected to PIN
-    'UID': 1, # len ACK + echo len of sent UID + UID, set in PPController instance __init__
-    'ICS': 1, # len ACK + echo len of sent ICS + ICS, set in PPController instance __init__
-    'MSG': 1, # len ACK + echo len of sent msg + msg
-    'REG': 2, # len ACK + echo REG_CODE + REG_VALUE_LEN + REG value for given register for given PPD
-    'NAM': 2, # len ACK + echo length of PPD hostname + hostname for given PPD
-    'RPT': 1, # len ACK + echo number of PPDs sent (for which report data will be sent)
+    'BOS': 1,  # len bosmang bool
+    'TIM': 4,  # len timestamp int
+    'CMD': 1,  # len cmd_code + bytes in CMD_CODE
+    'HOS': 1,  # len len(hostname) + len(hostname)
+    'LOD': 4,  # len loadavg string from float
+    'UPT': 4,  # len uptime seconds int
+    'TZN': 3,  # len utcoffset seconds int
+    'PEN': 1,  # len pin int of MCU GPIO connected to PIN
+    'UID': 1,  # len ACK + echo: len len(UID) + len(UID); set in PPController instance __init__
+    'ICS': 1,  # len ACK + echo: len len(ICS) + len(ICS); set in PPController instance __init__
+    'MSG': 1,  # len ACK + echo: len len(msg) + len(msg)
+    'REG': 2,  # len ACK + echo: REG_CODE + REG_VALUE_LEN + len(REG value); for given register for given PPD
+    'NAM': 2,  # len ACK + echo: len(hostname) + len(hostname); for given PPD
+    'RPT': 1,  # len ACK + echo: len(ppds); ppds for which report data will be sent
 
-    'RBT': 1, # len ACK + echo cmd_code + device_address
-    'SDN': 1, # len ACK + echo cmd_code + device_address
-    'ONN': 1, # len ACK + echo cmd_code + device_address
-    'OFF': 1 } # len ACK + echo cmd_code + device_address
+    'RBT': 1,  # len ACK + echo: cmd_code + device_address
+    'SDN': 1,  # len ACK + echo: cmd_code + device_address
+    'ONN': 1,  # len ACK + echo: cmd_code + device_address
+    'OFF': 1 } # len ACK + echo: cmd_code + device_address
 
 CMD_CODE = (
     (  0, 'NOP',        0), # no command, not used
@@ -93,15 +92,15 @@ CMD_CODE = (
     ( 99, 'OFFLINE',    1), # device_address
     ( 99, 'ONLINE',     1), # device_address
     (100, 'DEREGISTER', 1), # device_address
-    (101, 'REG_GET' ,   2), # device_address + register to get; used for:
+    (101, 'REG_GET' ,   2), # device_address, reg_code ; used for:
                             # hostname, bosmang, timezone, uart/gpio_poweroff/pen pins
                             # PPDevice will update its self values.
                             # ppdd must then accept incoming data addr+reg_code+value
                             # 2nd followon CONFIRM send when complete
-    (122, 'FLICKER',    2), # device_address + duration
+    (122, 'FLICKER',    2), # device_address, duration
 
-    (226, 'ROUNDROBIN', 1), # duration. ALL PPDs
-    (227, 'REPORT',     1), # number of PPDs; 0xFF for all; if not 0xFF,
+    (226, 'ROUNDROBIN', 1), # duration ; ALL PPDs
+    (227, 'REPORT',     1), # number of ppds ; 0xFF for all; if not 0xFF,
                             # PPC then probes NAM register N times for list of addrs,
                             # hostname included for error detection.
 
@@ -123,16 +122,15 @@ CMD_CODE = (
    is limited by the number of available MCU GPIOs for RPi-connected pins
    gpio_poweroff & PEN."""
 
-REG_VAL_LEN['CLR'] = 16
-"""number of bytes to clear from the sender's TX buffer"""
-
 class UNDevice():
     """Represents an I2C peripheral device unidentified to a `PPController`"""
-    def __init__(self, controller, device_address, *argv, **kwargs):
+    def __init__(self, controller, device_address):
         self.controller  = controller
-        self.device_address = device_address
+        """type: PPController Creator/owner of the UNDevice instance."""
         self.i2cdevice      = None
-        """The I2CDevice created by a PPController."""
+        """type: I2CDevice Created by a PPController."""
+        self.device_address = device_address
+        """type: int The I2C address of the UNDevice"""
 
         self.retries     = 0
         self.retries_max = 4
@@ -141,37 +139,44 @@ class UNDevice():
 class PPDevice():
     """Represents an I2C peripheral device identified as a `PPDevice`
     and stores data from those hosts."""
-    def __init__(self, controller, device_address, *argv, **kwargs):
+    def __init__(self, controller, device_address):
         self.controller     = controller
-        self.device_address = device_address
+        """type: PPController Creator/owner of the PPDevice instance."""
         self.i2cdevice      = None
-        """The I2CDevice created by a PPController."""
+        """type: I2CDevice Created by a PPController."""
+        self.device_address = device_address
+        """type: int The I2C address of the PPDevice"""
 
         self.lastonline  = None
-        """type: timetuple A controller time-stamp updated with each successful receive.
+        """type: int A controller timestamp updated with each successful receive.
            reports & bosmang can decide what to do with this info."""
 
-        """All data below are received *from* the PPC device:"""
+        """All data below are received via I2C *from* the PPC device:"""
 
         self.bosmang    = None
-        """Declaration that device will send datetime & control instructions to controller.
+        """type: bool Declaration that device can send datetime & commands to controller.
            Only one bosmang per controller please, unless you wanya chaos."""
         self.command    = None
-
-        self.uart_rx    = None
-        """MCU gpio rx for passthru from bosmang console TX"""
-        self.uart_tx    = None
-        """MCU gpio tx for passthru from bosmang console RX"""
-        self.pen        = None
-        """MCU gpio connected to RPi pen pin"""
+        """type: bytes Ref: CMD_CODES The latest command received from a PPC device."""
 
         self.hostname   = None
+        """type: str"""
         self.datetimetuple   = None
         """type: datetime Converted from timestamp, used to send datetime as bosmang &
            to check for datetime skew on other devices."""
         self.utcoffset  = None
+        """type: int"""
         self.loadavg    = None
+        """type: str"""
         self.uptime     = None
+        """type: int"""
+
+        self.uart_rx    = None
+        """type: int MCU gpio rx for passthru from bosmang console TX"""
+        self.uart_tx    = None
+        """type: int MCU gpio tx for passthru from bosmang console RX"""
+        self.pen        = None
+        """type: int MCU gpio connected to RPi pen pin"""
 
         self.id_str = type(self).__name__[2]+" "+str(hex(self.device_address))
 
@@ -179,43 +184,47 @@ class PPDevice():
         """Wrapper for logger."""
         logger.info('%-6s %-27s %-9s %s' % (self.id_str, message+str(msg or ''), fname, self.controller.i2c_str))
 
+    @staticmethod
     def dcd_cmd(cmd_code=None,cmd_name=None):
-        "Decode command codes from cmd_code or cmd_name"
+        "Decode command codes from cmd_code or cmd_name. Returns a CMD_CODE tuple."
         if cmd_code:
-            clist = list(filter(lambda ctuple: ctuple[0] == cmd_code, self.CMD_CODE))
-            if clist:
-                return clist[0]
+            for cct in list(filter(lambda ctup: ctup[0] == cmd_code, CMD_CODE)):
+                return cct
         if cmd_name:
-            clist = list(filter(lambda ctuple: ctuple[1] == cmd_name, self.CMD_CODE))
-            if clist:
-                return clist[0]
+            for cct in list(filter(lambda ctup: ctup[1] == cmd_name, CMD_CODE)):
+                return cct
         return None
 
     @staticmethod
-    def dcd_sec(seconds):
+    def conv_sec(seconds):
+        """Convert seconds into a tuple: days, hours, minutes, seconds"""
         minutes, seconds = divmod(seconds, 60)
         hours, minutes = divmod(minutes, 60)
         days, hours = divmod(hours, 24)
         return days, hours, minutes, seconds
+
+    @staticmethod
+    def clr_fifo(i2cdevice):
+        """Clear the i2c peripheral's transmit FIFO"""
+        msg = bytearray(REG_VAL_LEN['CLR'])
+        try:
+            i2cdevice.write_then_readinto(REG_CODE['CLR'],msg)
+        except OSError:
+            pass
 
     def get_hos(self):
         """Ask PPD for its hostname"""
         fname='get_hos'
         #self.log_txn(fname,"querying device")
         with self.i2cdevice as i2cdevice:
-            msg = bytearray(REG_VAL_LEN['CLR'])
-            try:
-                i2cdevice.write_then_readinto(REG_CODE['CLR'],msg)
-                """Clear the i2c peripheral's transmit FIFO"""
-            except OSError:
-                pass
+            self.clr_fifo(i2cdevice)
             msg = bytearray(REG_VAL_LEN['HOS'])
             try:
                 i2cdevice.write_then_readinto(REG_CODE['HOS'],msg)
                 """Get the length in bytes of the hostname"""
                 msg = bytearray(int.from_bytes(msg, byteorder))
                 i2cdevice.readinto(msg)
-                self.lastonline=datetime.now().timetuple()
+                self.lastonline=int(datetime.now().timestamp())
                 self.log_txn(fname,"recvd hostname ",msg.decode())
                 return msg.decode()
             except OSError:
@@ -227,16 +236,11 @@ class PPDevice():
         fname='get_tim'
         #self.log_txn(fname,"querying device")
         with self.i2cdevice as i2cdevice:
-            msg = bytearray(REG_VAL_LEN['CLR'])
-            try:
-                i2cdevice.write_then_readinto(REG_CODE['CLR'],msg)
-                """Clear the i2c peripheral's transmit FIFO"""
-            except OSError:
-                pass
+            self.clr_fifo(i2cdevice)
             msg = bytearray(REG_VAL_LEN['TIM'])
             try:
                 i2cdevice.write_then_readinto(REG_CODE['TIM'],msg)
-                self.lastonline=datetime.now().timetuple()
+                self.lastonline=int(datetime.now().timestamp())
                 self.log_txn(fname,"recvd datetime: ",int.from_bytes(bytes(msg),byteorder))
                 return datetime.fromtimestamp((int.from_bytes(bytes(msg),byteorder))).timetuple()
             except OSError:
@@ -248,16 +252,11 @@ class PPDevice():
         fname='get_bos'
         #self.log_txn(fname,"querying device")
         with self.i2cdevice as i2cdevice:
-            msg = bytearray(REG_VAL_LEN['CLR'])
-            try:
-                i2cdevice.write_then_readinto(REG_CODE['CLR'],msg)
-                """Clear the i2c peripheral's transmit FIFO"""
-            except OSError:
-                pass
+            self.clr_fifo(i2cdevice)
             msg = bytearray(REG_VAL_LEN['BOS'])
             try:
                 i2cdevice.write_then_readinto(REG_CODE['BOS'],msg)
-                self.lastonline=datetime.now().timetuple()
+                self.lastonline=int(datetime.now().timestamp())
                 self.log_txn(fname,"recvd bosmang status: ",bool(msg.decode()))
                 return bool(int.from_bytes(bytes(msg),byteorder))
             except OSError:
@@ -269,12 +268,7 @@ class PPDevice():
         fname='get_cmd'
         #self.log_txn(fname,"querying device")
         with self.i2cdevice as i2cdevice:
-            msg = bytearray(REG_VAL_LEN['CLR'])
-            try:
-                i2cdevice.write_then_readinto(REG_CODE['CLR'],msg)
-                """Clear the i2c peripheral's transmit FIFO"""
-            except OSError:
-                pass
+            self.clr_fifo(i2cdevice)
             msg = bytearray(REG_VAL_LEN['CMD'])
             try:
                 i2cdevice.write_then_readinto(REG_CODE['CMD'],msg)
@@ -284,10 +278,10 @@ class PPDevice():
                     self.log_txn(fname,"recvd command",msg.decode())
                     #msg = self.dcd_cmd(cmd_code)
                     #i2cdevice.readinto(msg)
-                    self.lastonline=datetime.now().timetuple()
+                    self.lastonline=int(datetime.now().timestamp())
                     return cmd_code,msg.decode()
                 else:
-                    self.lastonline=datetime.now().timetuple()
+                    self.lastonline=int(datetime.now().timestamp())
                     self.log_txn(fname,"recvd no command")
                     return 0
             except OSError:
@@ -299,16 +293,11 @@ class PPDevice():
         fname='get_tzn'
         #self.log_txn(fname,"querying device")
         with self.i2cdevice as i2cdevice:
-            msg = bytearray(REG_VAL_LEN['CLR'])
-            try:
-                i2cdevice.write_then_readinto(REG_CODE['CLR'],msg)
-                """Clear the i2c peripheral's transmit FIFO"""
-            except OSError:
-                pass
+            self.clr_fifo(i2cdevice)
             msg = bytearray(REG_VAL_LEN['TZN'])
             try:
                 i2cdevice.write_then_readinto(REG_CODE['TZN'],msg)
-                self.lastonline=datetime.now().timetuple()
+                self.lastonline=int(datetime.now().timestamp())
                 self.log_txn(fname,"recvd utcoffset: ",int.from_bytes(bytes(msg),byteorder))
                 return int.from_bytes(bytes(msg),byteorder)
             except OSError:
@@ -320,16 +309,11 @@ class PPDevice():
         fname='get_lod'
         #self.log_txn(fname,"querying device")
         with self.i2cdevice as i2cdevice:
-            msg = bytearray(REG_VAL_LEN['CLR'])
-            try:
-                i2cdevice.write_then_readinto(REG_CODE['CLR'],msg)
-                """Clear the i2c peripheral's transmit FIFO"""
-            except OSError:
-                pass
+            self.clr_fifo(i2cdevice)
             msg = bytearray(REG_VAL_LEN['LOD'])
             try:
                 i2cdevice.write_then_readinto(REG_CODE['LOD'],msg)
-                self.lastonline=datetime.now().timetuple()
+                self.lastonline=int(datetime.now().timestamp())
                 self.log_txn(fname,"recvd loadavg: ","{:04.2f}".format(float(msg.decode())))
                 return msg.decode()
             except OSError:
@@ -341,21 +325,16 @@ class PPDevice():
         fname='get_upt'
         #self.log_txn(fname,"querying device")
         with self.i2cdevice as i2cdevice:
-            msg = bytearray(REG_VAL_LEN['CLR'])
-            try:
-                i2cdevice.write_then_readinto(REG_CODE['CLR'],msg)
-                """Clear the i2c peripheral's transmit FIFO"""
-            except OSError:
-                pass
+            self.clr_fifo(i2cdevice)
             msg = bytearray(1)
             try:
                 i2cdevice.write_then_readinto(REG_CODE['UPT'],msg)
                 """Read one byte so we can pause for PPD to get uptime"""
                 msg = bytearray(REG_VAL_LEN['UPT'])
                 i2cdevice.readinto(msg)
-                self.lastonline=datetime.now().timetuple()
+                self.lastonline=int(datetime.now().timestamp())
                 self.log_txn(fname,"recvd uptime: ",int.from_bytes(bytes(msg),byteorder))
-                self.log_txn(fname,"uptime %d d %02d:%02d" % self.dcd_sec(int.from_bytes(bytes(msg),byteorder))[:3])
+                self.log_txn(fname,"uptime %d d %02d:%02d" % self.conv_sec(int.from_bytes(bytes(msg),byteorder))[:3])
                 return int.from_bytes(bytes(msg),byteorder)
             except OSError:
                 pass
@@ -388,7 +367,7 @@ class PPController():
         self.bosmang   = kwargs.pop('bosmang', None)
         """type: int PPDevice device_address selected to recieve datetime & control
            instructions from, have UART connected for passthru, etc. If set, bosmang
-           will be the first PPDevice contacted and MCU RTC will be set at the earliest
+           will be the first PPDevice contacted & MCU RTC will be set at the earliest
            possible time."""
         if kwargs:
             raise TypeError('Unepxected kwargs provided: %s' % list(kwargs.keys()))
@@ -416,7 +395,7 @@ class PPController():
         self.bosmang_lok = None
         if self.bosmang:
             self.ppds.append(PPDevice(controller=self,device_address=self.bosmang))
-            self.ppds[0].i2cdevice=i2c_device.I2CDevice(self.i2c,device_address=self.bosmang,probe=False)
+            self.ppds[0].i2cdevice=I2CDevice(self.i2c,device_address=self.bosmang,probe=False)
             self.ppds[0].bosmang = True
             self.bosmang_lok = True
             self.log_txn(fname,'>>>  BOSMANG set, lok  <<<',hex(self.bosmang))
@@ -437,7 +416,7 @@ class PPController():
         for addr in self.i2c.scan():
             if not any(d.device_address == addr for d in chain(self.ppds,self.noident,self.othrdev)):
                 self.noident.append(UNDevice(controller=self,device_address=addr))
-                self.noident[-1].i2cdevice=i2c_device.I2CDevice(self.i2c,device_address=addr,probe=False)
+                self.noident[-1].i2cdevice=I2CDevice(self.i2c,device_address=addr,probe=False)
                 self.log_txn(fname,"added I2C peripheral",hex(addr))
         self.i2c.unlock()
         return True
@@ -464,7 +443,7 @@ class PPController():
                 if msg == ID_CODE:
                     self.ppds.append(PPDevice(controller=self,device_address=addr))
                     self.ppds[-1].i2cdevice = i2cd_unident
-                    self.ppds[-1].lastonline=datetime.now().timetuple()
+                    self.ppds[-1].lastonline=int(datetime.now().timestamp())
                     del self.noident[index]
                     self.log_txn(fname,">>>   ADDED PPDevice   <<<",hex(addr))
                 else:

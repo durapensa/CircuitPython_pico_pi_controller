@@ -58,6 +58,7 @@ class ReportData():
                 dstats['hostname']       = ppd.hostname
                 dstats['lastonline']     = ppd.lastonline
                 dstats['loadavg']        = ppd.loadavg
+                dstats['uptime']         = ppd.uptime
                 dstats['bosmang']        = ppd.bosmang
                 dstats['utcoffset']      = ppd.utcoffset
                 self.stats.append(dstats)
