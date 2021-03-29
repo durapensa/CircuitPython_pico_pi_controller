@@ -167,6 +167,94 @@ peripherals are <a href="/CircuitPython_pico_pi_controller/core.html#PPDevice"><
 </div>
     {% endraw %}
 
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+<div class="output_markdown rendered_html output_subarea ">
+<h4 id="PPController.i2c_scan" class="doc_header"><code>PPController.i2c_scan</code><a href="https://github.com/durapensa/CircuitPython_pico_pi_controller/tree/main/CircuitPython_pico_pi_controller/core.py#L409" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>PPController.i2c_scan</code>()</p>
+</blockquote>
+<p>Scans the I2C bus and creates I2CDevice objects for each I2C peripheral.</p>
+
+</div>
+
+</div>
+
+<div class="output_area">
+
+
+<div class="output_markdown rendered_html output_subarea ">
+<h4 id="PPController.idf_ppds" class="doc_header"><code>PPController.idf_ppds</code><a href="https://github.com/durapensa/CircuitPython_pico_pi_controller/tree/main/CircuitPython_pico_pi_controller/core.py#L424" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>PPController.idf_ppds</code>()</p>
+</blockquote>
+<p>Identifies PPDs from among all unidentified I2C peripherals.
+I2CDevice objects for non-PPD I2C peripherals are eventually discared.</p>
+
+</div>
+
+</div>
+
+<div class="output_area">
+
+
+<div class="output_markdown rendered_html output_subarea ">
+<h4 id="PPController.add_ppds" class="doc_header"><code>PPController.add_ppds</code><a href="https://github.com/durapensa/CircuitPython_pico_pi_controller/tree/main/CircuitPython_pico_pi_controller/core.py#L462" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>PPController.add_ppds</code>()</p>
+</blockquote>
+<p>This class is a wrapper for <code>i2c_scan</code> + <code>idf_ppds</code>.</p>
+
+</div>
+
+</div>
+
+<div class="output_area">
+
+
+<div class="output_markdown rendered_html output_subarea ">
+<h4 id="PPController.qry_ppds" class="doc_header"><code>PPController.qry_ppds</code><a href="https://github.com/durapensa/CircuitPython_pico_pi_controller/tree/main/CircuitPython_pico_pi_controller/core.py#L471" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>PPController.qry_ppds</code>(<strong><code>ppds</code></strong>=<em><code>None</code></em>)</p>
+</blockquote>
+<p>Queries PPDs for their essential metadata &amp; stats; queries all by default.
+Updates bosmang status if setting not locked on controller.
+Note that certain PPD metadata, once set, can be changed only via command.</p>
+
+</div>
+
+</div>
+
+<div class="output_area">
+
+
+<div class="output_markdown rendered_html output_subarea ">
+<h4 id="PPController.png_ppds" class="doc_header"><code>PPController.png_ppds</code><a href="https://github.com/durapensa/CircuitPython_pico_pi_controller/tree/main/CircuitPython_pico_pi_controller/core.py#L505" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>PPController.png_ppds</code>(<strong><code>ppds</code></strong>=<em><code>None</code></em>)</p>
+</blockquote>
+<p>Pings PPDs for queued commands &amp; essential stats; pings all PPDs by default.</p>
+
+</div>
+
+</div>
+
+<div class="output_area">
+
+
+<div class="output_markdown rendered_html output_subarea ">
+<h4 id="PPController.get_ppd" class="doc_header"><code>PPController.get_ppd</code><a href="https://github.com/durapensa/CircuitPython_pico_pi_controller/tree/main/CircuitPython_pico_pi_controller/core.py#L519" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>PPController.get_ppd</code>(<strong><code>device_address</code></strong>=<em><code>None</code></em>, <strong><code>hostname</code></strong>=<em><code>None</code></em>)</p>
+</blockquote>
+<p>Get a PPDevice object by device_address or hostname.</p>
+
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
 </div>
  
 

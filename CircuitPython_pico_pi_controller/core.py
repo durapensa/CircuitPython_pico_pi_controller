@@ -407,7 +407,7 @@ class PPController():
         logger.info('%-6s %-27s %-9s %s' % (id_str, message+str(msg or ''), fname, self.i2c_str))
 
     def i2c_scan(self):
-        """Scan the I2C bus and create I2CDevice objects for each peripheral."""
+        """Scans the I2C bus and creates I2CDevice objects for each I2C peripheral."""
         fname='i2c_scan'
         while not self.i2c.try_lock():
             pass
@@ -422,7 +422,8 @@ class PPController():
         return True
 
     def idf_ppds(self):
-        """Identify PPDs from among all unidentified I2CDevices"""
+        """Identifies PPDs from among all unidentified I2C peripherals.
+        I2CDevice objects for non-PPD I2C peripherals are eventually discared."""
         fname='idf_ppds'
         index = 0
         while index < len(self.noident):
@@ -459,7 +460,7 @@ class PPController():
                 self.qry_ppds([self.ppds[-1]])
 
     def add_ppds(self):
-        """Wrapper for `i2c_scan` + `idf_ppds`."""
+        """This class is a wrapper for `i2c_scan` + `idf_ppds`."""
         fname='add_ppds'
         self.log_txn(fname,'Auto-adding PPDevices')
         self.i2c_scan()
@@ -468,9 +469,9 @@ class PPController():
             self.idf_ppds()
 
     def qry_ppds(self,ppds=None):
-        """Ask PPDs for their essential metadata & stats. Updates bosmang status
-           if setting not locked on controller.
-           Note that certain metadata, once set, can be changed only via command."""
+        """Queries PPDs for their essential metadata & stats; queries all by default.
+           Updates bosmang status if setting not locked on controller.
+           Note that certain PPD metadata, once set, can be changed only via command."""
         fname='qry_ppds'
         #self.log_txn(fname,'    function called')
         for ppd in ppds or self.ppds:
@@ -502,7 +503,7 @@ class PPController():
             ppd.uptime        = ppd.get_upt()
 
     def png_ppds(self,ppds=None):
-        """Ask PPDs for queued commands & essential stats."""
+        """Pings PPDs for queued commands & essential stats; pings all PPDs by default. """
         fname='png_ppds'
         self.log_txn(fname,'pinging PPDevices')
         for ppd in ppds or self.ppds:
