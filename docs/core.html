@@ -94,7 +94,7 @@ mycontroller.listdevices()
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h2 id="UNDevice" class="doc_header"><code>class</code> <code>UNDevice</code><a href="https://github.com/durapensa/CircuitPython_pico_pi_controller/tree/main/CircuitPython_pico_pi_controller/core.py#L129" class="source_link" style="float:right">[source]</a></h2><blockquote><p><code>UNDevice</code>(<strong><code>controller</code></strong>, <strong><code>device_address</code></strong>)</p>
+<h2 id="UNDevice" class="doc_header"><code>class</code> <code>UNDevice</code><a href="https://github.com/durapensa/CircuitPython_pico_pi_controller/tree/main/CircuitPython_pico_pi_controller/core.py#L41" class="source_link" style="float:right">[source]</a></h2><blockquote><p><code>UNDevice</code>(<strong><code>controller</code></strong>, <strong><code>device_address</code></strong>)</p>
 </blockquote>
 <p>Represents an I2C peripheral device unidentified to a <a href="/CircuitPython_pico_pi_controller/core.html#PPController"><code>PPController</code></a></p>
 
@@ -119,7 +119,7 @@ mycontroller.listdevices()
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h2 id="PPDevice" class="doc_header"><code>class</code> <code>PPDevice</code><a href="https://github.com/durapensa/CircuitPython_pico_pi_controller/tree/main/CircuitPython_pico_pi_controller/core.py#L143" class="source_link" style="float:right">[source]</a></h2><blockquote><p><code>PPDevice</code>(<strong><code>controller</code></strong>, <strong><code>device_address</code></strong>)</p>
+<h2 id="PPDevice" class="doc_header"><code>class</code> <code>PPDevice</code><a href="https://github.com/durapensa/CircuitPython_pico_pi_controller/tree/main/CircuitPython_pico_pi_controller/core.py#L55" class="source_link" style="float:right">[source]</a></h2><blockquote><p><code>PPDevice</code>(<strong><code>controller</code></strong>, <strong><code>device_address</code></strong>)</p>
 </blockquote>
 <p>Represents an I2C peripheral device identified as a <a href="/CircuitPython_pico_pi_controller/core.html#PPDevice"><code>PPDevice</code></a>
 and stores data from those hosts.</p>
@@ -145,7 +145,7 @@ and stores data from those hosts.</p>
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h2 id="PPController" class="doc_header"><code>class</code> <code>PPController</code><a href="https://github.com/durapensa/CircuitPython_pico_pi_controller/tree/main/CircuitPython_pico_pi_controller/core.py#L374" class="source_link" style="float:right">[source]</a></h2><blockquote><p><code>PPController</code>(<strong>**<code>kwargs</code></strong>)</p>
+<h2 id="PPController" class="doc_header"><code>class</code> <code>PPController</code><a href="https://github.com/durapensa/CircuitPython_pico_pi_controller/tree/main/CircuitPython_pico_pi_controller/core.py#L275" class="source_link" style="float:right">[source]</a></h2><blockquote><p><code>PPController</code>(<strong>**<code>kwargs</code></strong>)</p>
 </blockquote>
 <p>Represents one of the system's I2C busses and tracks which I2C
 peripherals are <a href="/CircuitPython_pico_pi_controller/core.html#PPDevice"><code>PPDevice</code></a>s.</p>
@@ -178,7 +178,7 @@ peripherals are <a href="/CircuitPython_pico_pi_controller/core.html#PPDevice"><
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="PPController.i2c_scan" class="doc_header"><code>PPController.i2c_scan</code><a href="https://github.com/durapensa/CircuitPython_pico_pi_controller/tree/main/CircuitPython_pico_pi_controller/core.py#L426" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>PPController.i2c_scan</code>()</p>
+<h4 id="PPController.i2c_scan" class="doc_header"><code>PPController.i2c_scan</code><a href="https://github.com/durapensa/CircuitPython_pico_pi_controller/tree/main/CircuitPython_pico_pi_controller/core.py#L327" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>PPController.i2c_scan</code>()</p>
 </blockquote>
 <p>Scans the I2C bus and creates I2CDevice objects for each I2C peripheral.</p>
 
@@ -190,7 +190,7 @@ peripherals are <a href="/CircuitPython_pico_pi_controller/core.html#PPDevice"><
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="PPController.idf_ppds" class="doc_header"><code>PPController.idf_ppds</code><a href="https://github.com/durapensa/CircuitPython_pico_pi_controller/tree/main/CircuitPython_pico_pi_controller/core.py#L441" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>PPController.idf_ppds</code>()</p>
+<h4 id="PPController.idf_ppds" class="doc_header"><code>PPController.idf_ppds</code><a href="https://github.com/durapensa/CircuitPython_pico_pi_controller/tree/main/CircuitPython_pico_pi_controller/core.py#L342" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>PPController.idf_ppds</code>()</p>
 </blockquote>
 <p>Identifies PPDs from among all unidentified I2C peripherals.
 I2CDevice objects for non-PPD I2C peripherals are eventually discared.</p>
@@ -203,7 +203,7 @@ I2CDevice objects for non-PPD I2C peripherals are eventually discared.</p>
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="PPController.add_ppds" class="doc_header"><code>PPController.add_ppds</code><a href="https://github.com/durapensa/CircuitPython_pico_pi_controller/tree/main/CircuitPython_pico_pi_controller/core.py#L479" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>PPController.add_ppds</code>()</p>
+<h4 id="PPController.add_ppds" class="doc_header"><code>PPController.add_ppds</code><a href="https://github.com/durapensa/CircuitPython_pico_pi_controller/tree/main/CircuitPython_pico_pi_controller/core.py#L380" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>PPController.add_ppds</code>()</p>
 </blockquote>
 <p>This class is a wrapper for <code>i2c_scan</code> + <code>idf_ppds</code>.</p>
 
@@ -215,7 +215,7 @@ I2CDevice objects for non-PPD I2C peripherals are eventually discared.</p>
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="PPController.qry_ppds" class="doc_header"><code>PPController.qry_ppds</code><a href="https://github.com/durapensa/CircuitPython_pico_pi_controller/tree/main/CircuitPython_pico_pi_controller/core.py#L488" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>PPController.qry_ppds</code>(<strong><code>ppds</code></strong>=<em><code>None</code></em>)</p>
+<h4 id="PPController.qry_ppds" class="doc_header"><code>PPController.qry_ppds</code><a href="https://github.com/durapensa/CircuitPython_pico_pi_controller/tree/main/CircuitPython_pico_pi_controller/core.py#L389" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>PPController.qry_ppds</code>(<strong><code>ppds</code></strong>=<em><code>None</code></em>)</p>
 </blockquote>
 <p>Queries PPDs for their essential metadata &amp; stats; queries all by default.
 Updates bosmang status if setting not locked on controller.
@@ -229,7 +229,7 @@ Note that certain PPD metadata, once set, can be changed only via command.</p>
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="PPController.png_ppds" class="doc_header"><code>PPController.png_ppds</code><a href="https://github.com/durapensa/CircuitPython_pico_pi_controller/tree/main/CircuitPython_pico_pi_controller/core.py#L522" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>PPController.png_ppds</code>(<strong><code>ppds</code></strong>=<em><code>None</code></em>)</p>
+<h4 id="PPController.png_ppds" class="doc_header"><code>PPController.png_ppds</code><a href="https://github.com/durapensa/CircuitPython_pico_pi_controller/tree/main/CircuitPython_pico_pi_controller/core.py#L423" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>PPController.png_ppds</code>(<strong><code>ppds</code></strong>=<em><code>None</code></em>)</p>
 </blockquote>
 <p>Pings PPDs for queued commands &amp; essential stats; pings all PPDs by default.</p>
 
@@ -241,7 +241,7 @@ Note that certain PPD metadata, once set, can be changed only via command.</p>
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="PPController.get_ppd" class="doc_header"><code>PPController.get_ppd</code><a href="https://github.com/durapensa/CircuitPython_pico_pi_controller/tree/main/CircuitPython_pico_pi_controller/core.py#L538" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>PPController.get_ppd</code>(<strong><code>device_address</code></strong>=<em><code>None</code></em>, <strong><code>hostname</code></strong>=<em><code>None</code></em>)</p>
+<h4 id="PPController.get_ppd" class="doc_header"><code>PPController.get_ppd</code><a href="https://github.com/durapensa/CircuitPython_pico_pi_controller/tree/main/CircuitPython_pico_pi_controller/core.py#L439" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>PPController.get_ppd</code>(<strong><code>device_address</code></strong>=<em><code>None</code></em>, <strong><code>hostname</code></strong>=<em><code>None</code></em>)</p>
 </blockquote>
 <p>Get a PPDevice object by device_address or hostname.</p>
 
