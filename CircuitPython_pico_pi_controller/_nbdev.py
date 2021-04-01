@@ -5,19 +5,10 @@ __all__ = ["index", "modules", "custom_doc_links", "git_url"]
 index = {"UNDevice": "00_core.ipynb",
          "PPDevice": "00_core.ipynb",
          "PPController": "00_core.ipynb",
-         "ID_CODE": "01_codes.ipynb",
-         "REG_CODE": "01_codes.ipynb",
-         "REG_VAL_LEN": "01_codes.ipynb",
-         "CMD_CATALOG": "01_codes.ipynb",
-         "CMD_CODE": "01_codes.ipynb",
-         "CMD_NAME": "01_codes.ipynb",
-         "CMD_VAL_LEN": "01_codes.ipynb",
-         "REP_CLI_CATALOG": "01_codes.ipynb",
-         "stats_struct": "20_reports.ipynb",
-         "ReportData": "20_reports.ipynb"}
+         "ReportData": "20_reports.ipynb",
+         "stats_struct": "20_reports.ipynb"}
 
 modules = ["core.py",
-           "codes.py",
            "schedule.py",
            "reports.py"]
 

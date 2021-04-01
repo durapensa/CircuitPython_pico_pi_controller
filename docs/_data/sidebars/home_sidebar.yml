@@ -13,9 +13,6 @@ entries:
       title: CircuitPython_pico_pi_controller
       url: core.html
     - output: web,pdf
-      title: CircuitPython_pico_pi_controller.codes
-      url: codes.html
-    - output: web,pdf
       title: CircuitPython_pico_pi_controller.schedule
       url: schedule.html
     - output: web,pdf

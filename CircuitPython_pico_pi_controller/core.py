@@ -4,7 +4,7 @@ __all__ = ['UNDevice', 'PPDevice', 'PPController']
 
 # Cell
 
-from .codes import *
+from CircuitPython_pico_pi_common.codes import *
 from sys import byteorder
 import board
 import microcontroller
@@ -161,8 +161,8 @@ class PPDevice():
             try:
                 i2cdevice.write_then_readinto(REG_CODE['BOS'],msg)
                 self.lastonline=int(datetime.now().timestamp())
-                self.log_txn(fname,"recvd bosmang status: ",bool(msg.decode()))
-                return bool(int.from_bytes(bytes(msg),byteorder))
+                self.log_txn(fname,"recvd bosmang status: ", str(bool(int.from_bytes(bytes(msg), byteorder))))
+                return bool(int.from_bytes(bytes(msg), byteorder))
             except OSError:
                 pass
         return None
@@ -423,7 +423,7 @@ class PPController():
             ppd.loadavg       = ppd.get_lod()
             ppd.uptime        = ppd.get_upt()
 
-    def png_ppds(self,  ppds=None , register_names=None):
+    def png_ppds(self,  ppds=[] , register_names=None):
         """Pings PPDs for queued commands, register values; pings all PPDs by default,
            or a list of ppds, in both cases starting with bosmang."""
         fname='png_ppds'
@@ -431,8 +431,8 @@ class PPController():
             if self.ppds[0] != self.get_ppd(device_address=self.bosmang):
                 self.ppds.insert(0, self.ppds.pop(self.ppds.index(self.get_ppd(device_address=self.bosmang))))
 
-        if self.get_ppd(device_address=self.bosmang) not in ppds:
-            ppds = self.get_ppd(device_address=self.bosmang) + ppds
+        if self.bosmang and not self.get_ppd(device_address=self.bosmang) in ppds:
+            ppds = [self.get_ppd(device_address=self.bosmang)] + ppds
 
         self.log_txn(fname,'>>> Pinging PPDevices <<<')
         for ppd in ppds[1:] or self.ppds:
@@ -461,7 +461,10 @@ class PPController():
     def cmd_hndlr(self, ppd):
         fname='cmd_hndlr'
         """Handle a command sent by a PPDevice."""
-        if ppd.command[0] == CMD_CODE['FLICKER']:
-            self.log_txn(fname,str(ppd.command))
-            self.get_ppd(device_address=ppd.command[1]).set_flkr(ppd.command[2])
+        if self.get_ppd(device_address=ppd.command[1]):
+            if ppd.command[0] == CMD_CODE['FLICKER']:
+                #self.log_txn(fname,str(ppd.command),hex(ppd.command[1]))
+                self.get_ppd(device_address=ppd.command[1]).set_flkr(ppd.command[2])
+        else:
+            self.log_txn(fname,"No device "+hex(ppd.command[1]))
         ppd.command = None
