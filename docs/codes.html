@@ -6,8 +6,8 @@ title: CircuitPython_pico_pi_controller.codes
 keywords: fastai
 sidebar: home_sidebar
 
-summary: "Codes requires for all PPC classes"
-description: "Codes requires for all PPC classes"
+summary: "PPD Register & Command codes required for PPC classes."
+description: "PPD Register & Command codes required for PPC classes."
 nb_path: "01_codes.ipynb"
 ---
 <!--
@@ -32,22 +32,6 @@ nb_path: "01_codes.ipynb"
     {% raw %}
     
 <div class="cell border-box-sizing code_cell rendered">
-
-<div class="output_wrapper">
-<div class="output">
-
-<div class="output_area">
-
-
-
-<div class="output_text output_subarea output_execute_result">
-<pre>&#34;Command cmd_code int values, command NAME, number of bytes remaining\n   in command msg buffer. \n   All commands require followon CONFIRM.\n   All commands sending device_address may send 0xFF for ALL devices.\n   So as to avoid collisions with ASCII/UTF-8\n   control characters &amp; capital letters used by REG_CODE, purely to \n   avoid confusion, valid ranges are: 97-122, 225-250. Common commands\n   (cmd_code &lt;128) may be used by regular PPDs, but only on self. Rserved \n   commands (cmd_code &gt;127) can be used externally only by bosmang.\n   Suggested for PPD to send OFFLNE before manual or programmed shutdown.\n   The number of PPDs that can be included in &#39;all&#39; for POWERON &amp; POWEROFF\n   is limited by the number of available MCU GPIOs for RPi-connected pins\n   gpio_poweroff &amp; PEN.\n&#34;</pre>
-</div>
-
-</div>
-
-</div>
-</div>
 
 </div>
     {% endraw %}

@@ -20,16 +20,13 @@ except ModuleNotFoundError:
     logger = logging.getLogger()
     logging.basicConfig(level = logging.DEBUG)
 
+from CircuitPython_pico_pi_common.codes import *
+
 # Cell
-stats_struct = {
-    'hostname'       : None,
-    'mcu_uid'        : None,
-    'ppc_i2c_str'    : None,
-    'device_address' : None,
-    'lastonline'     : None,
-    'loadavg'        : None,
-    'bosmang'        : None,
-    'utcoffset'      : None }
+stats_struct = { }
+
+for property_name, common_name in REP_CLI_CATALOG:
+    stats_struct[property_name]=None
 
 class ReportData():
     """Instances hold report data for PPDevices. Using this class,

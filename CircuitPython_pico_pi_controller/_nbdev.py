@@ -12,8 +12,9 @@ index = {"UNDevice": "00_core.ipynb",
          "CMD_CODE": "01_codes.ipynb",
          "CMD_NAME": "01_codes.ipynb",
          "CMD_VAL_LEN": "01_codes.ipynb",
-         "ReportData": "20_reports.ipynb",
-         "stats_struct": "20_reports.ipynb"}
+         "REP_CLI_CATALOG": "01_codes.ipynb",
+         "stats_struct": "20_reports.ipynb",
+         "ReportData": "20_reports.ipynb"}
 
 modules = ["core.py",
            "codes.py",

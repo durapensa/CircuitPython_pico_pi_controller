@@ -37,35 +37,17 @@ nb_path: "00_core.ipynb"
 </div>
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>The classes in this module inherit from Adafruit's <code>busio</code> &amp; <code>adafruit_bus_device</code> I2C classes for CircuitPython. <code>busio</code> is distributed with <a href="https://circuitpython.org">CircuitPython</a>, and <code>adafruit_bus_device</code> is distributed with the <a href="https://circuitpython.org/libraries">CircuitPython Library Bundle</a>.</p>
-<p>Broadcom SoC hardware I2C is utilized both for the controlling MCU (the Pico) and the controlled SBCs (Raspberry Pi 4/3+/Zero). I2C baudrate is limited from the controller (the Pico) to reduce transmit/receive errors.</p>
-
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p>Controller programs may be written with hard-coded I2C peripheral addresses of connected SBCs (called 'devices' by these classes). Or, autodiscovery may be used so that devices may be added without changing software on the controller.</p>
+<p>Controller programs may be written with a hard-coded I2C peripheral addresses of the primary connected SBC, aka 'bosmang' . Autodiscovery may then be used so that devices may be added without changing software on the controller.</p>
 <p>For example:</p>
+<div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pico_pi_controller</span> <span class="k">as</span> <span class="nn">PPC</span>
 
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<p><code>
-from pico_pi_controller import *</p>
-<p>mycontroller = PPController()</p>
-<p>mycontroller.addDevice('0x13')
-mycontroller.listdevices()
-&lt;/code&gt;</p>
+<span class="n">mycontroller</span> <span class="o">=</span> <span class="n">PPC</span><span class="o">.</span><span class="n">PPController</span><span class="p">(</span><span class="mh">0x13</span><span class="p">)</span>
 
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
+<span class="n">mycontroller</span><span class="o">.</span><span class="n">addDevice</span><span class="p">(</span><span class="s1">&#39;0x13&#39;</span><span class="p">)</span>
+<span class="n">mycontroller</span><span class="o">.</span><span class="n">listdevices</span><span class="p">()</span>
+</pre></div>
 <p>This example will initialize I2C on the controller using the board defaults (I2C bus 1), retrieve host information &amp; statistics from the SBC at I2C address 0x13, then return a list of device information.</p>
+<p>Broadcom SoC hardware I2C is utilized both for the controlling MCU (the Pico) and the controlled SBCs (Raspberry Pi 4/3+/Zero). I2C baudrate is limited from the controller (the Pico) to reduce transmit/receive errors.</p>
 
 </div>
 </div>
@@ -178,7 +160,7 @@ peripherals are <a href="/CircuitPython_pico_pi_controller/core.html#PPDevice"><
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="PPController.i2c_scan" class="doc_header"><code>PPController.i2c_scan</code><a href="https://github.com/durapensa/CircuitPython_pico_pi_controller/tree/main/CircuitPython_pico_pi_controller/core.py#L327" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>PPController.i2c_scan</code>()</p>
+<h4 id="PPController.i2c_scan" class="doc_header"><code>PPController.i2c_scan</code><a href="https://github.com/durapensa/CircuitPython_pico_pi_controller/tree/main/CircuitPython_pico_pi_controller/core.py#L330" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>PPController.i2c_scan</code>()</p>
 </blockquote>
 <p>Scans the I2C bus and creates I2CDevice objects for each I2C peripheral.</p>
 
@@ -190,7 +172,7 @@ peripherals are <a href="/CircuitPython_pico_pi_controller/core.html#PPDevice"><
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="PPController.idf_ppds" class="doc_header"><code>PPController.idf_ppds</code><a href="https://github.com/durapensa/CircuitPython_pico_pi_controller/tree/main/CircuitPython_pico_pi_controller/core.py#L342" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>PPController.idf_ppds</code>()</p>
+<h4 id="PPController.idf_ppds" class="doc_header"><code>PPController.idf_ppds</code><a href="https://github.com/durapensa/CircuitPython_pico_pi_controller/tree/main/CircuitPython_pico_pi_controller/core.py#L345" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>PPController.idf_ppds</code>()</p>
 </blockquote>
 <p>Identifies PPDs from among all unidentified I2C peripherals.
 I2CDevice objects for non-PPD I2C peripherals are eventually discared.</p>
@@ -203,7 +185,7 @@ I2CDevice objects for non-PPD I2C peripherals are eventually discared.</p>
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="PPController.add_ppds" class="doc_header"><code>PPController.add_ppds</code><a href="https://github.com/durapensa/CircuitPython_pico_pi_controller/tree/main/CircuitPython_pico_pi_controller/core.py#L380" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>PPController.add_ppds</code>()</p>
+<h4 id="PPController.add_ppds" class="doc_header"><code>PPController.add_ppds</code><a href="https://github.com/durapensa/CircuitPython_pico_pi_controller/tree/main/CircuitPython_pico_pi_controller/core.py#L383" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>PPController.add_ppds</code>()</p>
 </blockquote>
 <p>This class is a wrapper for <code>i2c_scan</code> + <code>idf_ppds</code>.</p>
 
@@ -215,7 +197,7 @@ I2CDevice objects for non-PPD I2C peripherals are eventually discared.</p>
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="PPController.qry_ppds" class="doc_header"><code>PPController.qry_ppds</code><a href="https://github.com/durapensa/CircuitPython_pico_pi_controller/tree/main/CircuitPython_pico_pi_controller/core.py#L389" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>PPController.qry_ppds</code>(<strong><code>ppds</code></strong>=<em><code>None</code></em>)</p>
+<h4 id="PPController.qry_ppds" class="doc_header"><code>PPController.qry_ppds</code><a href="https://github.com/durapensa/CircuitPython_pico_pi_controller/tree/main/CircuitPython_pico_pi_controller/core.py#L392" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>PPController.qry_ppds</code>(<strong><code>ppds</code></strong>=<em><code>None</code></em>)</p>
 </blockquote>
 <p>Queries PPDs for their essential metadata &amp; stats; queries all by default.
 Updates bosmang status if setting not locked on controller.
@@ -229,9 +211,10 @@ Note that certain PPD metadata, once set, can be changed only via command.</p>
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="PPController.png_ppds" class="doc_header"><code>PPController.png_ppds</code><a href="https://github.com/durapensa/CircuitPython_pico_pi_controller/tree/main/CircuitPython_pico_pi_controller/core.py#L423" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>PPController.png_ppds</code>(<strong><code>ppds</code></strong>=<em><code>None</code></em>)</p>
+<h4 id="PPController.png_ppds" class="doc_header"><code>PPController.png_ppds</code><a href="https://github.com/durapensa/CircuitPython_pico_pi_controller/tree/main/CircuitPython_pico_pi_controller/core.py#L426" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>PPController.png_ppds</code>(<strong><code>ppds</code></strong>=<em><code>None</code></em>, <strong><code>register_names</code></strong>=<em><code>None</code></em>)</p>
 </blockquote>
-<p>Pings PPDs for queued commands &amp; essential stats; pings all PPDs by default.</p>
+<p>Pings PPDs for queued commands, register values; pings all PPDs by default,
+or a list of ppds, in both cases starting with bosmang.</p>
 
 </div>
 
@@ -241,7 +224,7 @@ Note that certain PPD metadata, once set, can be changed only via command.</p>
 
 
 <div class="output_markdown rendered_html output_subarea ">
-<h4 id="PPController.get_ppd" class="doc_header"><code>PPController.get_ppd</code><a href="https://github.com/durapensa/CircuitPython_pico_pi_controller/tree/main/CircuitPython_pico_pi_controller/core.py#L439" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>PPController.get_ppd</code>(<strong><code>device_address</code></strong>=<em><code>None</code></em>, <strong><code>hostname</code></strong>=<em><code>None</code></em>)</p>
+<h4 id="PPController.get_ppd" class="doc_header"><code>PPController.get_ppd</code><a href="https://github.com/durapensa/CircuitPython_pico_pi_controller/tree/main/CircuitPython_pico_pi_controller/core.py#L449" class="source_link" style="float:right">[source]</a></h4><blockquote><p><code>PPController.get_ppd</code>(<strong><code>device_address</code></strong>=<em><code>None</code></em>, <strong><code>hostname</code></strong>=<em><code>None</code></em>)</p>
 </blockquote>
 <p>Get a PPDevice object by device_address or hostname.</p>
 

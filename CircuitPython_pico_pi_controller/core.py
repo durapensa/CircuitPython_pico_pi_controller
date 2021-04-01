@@ -274,7 +274,7 @@ class PPDevice():
 
 class PPController():
     """Represents one of the system's I2C busses and tracks which I2C
-    peripherals are `PPDevice`s."""
+       peripherals are `PPDevice`s."""
     def __init__(self, **kwargs):
         fname='__init__'
         self.scl       = kwargs.pop('scl', board.SCL)
@@ -312,8 +312,7 @@ class PPController():
 
         self.bosmang_lok = None
         if self.bosmang:
-            self.ppds.append(PPDevice(controller=self,device_address=self.bosmang))
-            self.ppds[0].i2cdevice=I2CDevice(self.i2c,device_address=self.bosmang,probe=False)
+            self.add_ppd(self.bosmang)
             self.ppds[0].bosmang = True
             self.bosmang_lok = True
             self.log_txn(fname,'>>>  BOSMANG set, lok  <<<',hex(self.bosmang))
@@ -323,6 +322,10 @@ class PPController():
         """Wrapper for logger."""
         id_str = type(self).__name__[2]+" "+str(hexaddr or '    ')
         logger.info('%-6s %-27s %-9s %s' % (id_str, message+str(msg or ''), fname, self.i2c_str))
+
+    def add_ppd(self,device_address):
+        self.ppds.append(PPDevice(controller=self,device_address=device_address))
+        self.ppds[0].i2cdevice=I2CDevice(self.i2c,device_address=device_address,probe=False)
 
     def i2c_scan(self):
         """Scans the I2C bus and creates I2CDevice objects for each I2C peripheral."""
@@ -420,12 +423,19 @@ class PPController():
             ppd.loadavg       = ppd.get_lod()
             ppd.uptime        = ppd.get_upt()
 
-    def png_ppds(self,ppds=None):
-        """Pings PPDs for queued commands & essential stats; pings all PPDs by default. """
+    def png_ppds(self,  ppds=None , register_names=None):
+        """Pings PPDs for queued commands, register values; pings all PPDs by default,
+           or a list of ppds, in both cases starting with bosmang."""
         fname='png_ppds'
+        if self.bosmang and self.ppds:
+            if self.ppds[0] != self.get_ppd(device_address=self.bosmang):
+                self.ppds.insert(0, self.ppds.pop(self.ppds.index(self.get_ppd(device_address=self.bosmang))))
+
+        if self.get_ppd(device_address=self.bosmang) not in ppds:
+            ppds = self.get_ppd(device_address=self.bosmang) + ppds
+
         self.log_txn(fname,'>>> Pinging PPDevices <<<')
-        for ppd in ppds or self.ppds:
-            ppd.loadavg   = ppd.get_lod()
+        for ppd in ppds[1:] or self.ppds:
             ppd.command   = ppd.get_cmd()
             if isinstance(ppd.command, bytearray):
                 self.cmd_hndlr(ppd)
