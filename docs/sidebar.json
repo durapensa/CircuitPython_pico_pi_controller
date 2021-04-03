@@ -3,6 +3,7 @@
     "Overview": "/",
     "CircuitPython_pico_pi_controller": "core.html",
     "CircuitPython_pico_pi_controller.schedule": "schedule.html",
-    "CircuitPython_pico_pi_controller.reports": "reports.html"
+    "CircuitPython_pico_pi_controller.reports": "reports.html",
+    "CircuitPython_pico_pi_controller.persist": "persist.html"
   }
 }

@@ -289,6 +289,10 @@ class PPController():
            instructions from, have UART connected for passthru, etc. If set, bosmang
            will be the first PPDevice contacted & MCU RTC will be set at the earliest
            possible time."""
+        self.save   = kwargs.pop('save', None)
+        """type: bool. Used to persist PPDevice values to the MCU's flash storage, and
+           to inform PPControler to attempt a recovery of data from flash. Optional
+           because it uses more memory (loads modules persist, json)."""
         if kwargs:
             raise TypeError('Unepxected kwargs provided: %s' % list(kwargs.keys()))
 
@@ -317,6 +321,35 @@ class PPController():
             self.bosmang_lok = True
             self.log_txn(fname,'>>>  BOSMANG set, lok  <<<',hex(self.bosmang))
             self.qry_ppds()
+
+        if self.save:
+            self.log_txn(fname,"Loading PPDevices from flash.")
+            PPController.ext_prst()
+            id_str = type(self).__name__[2]
+            self.show_free(logger,id_str,self.i2c_str)
+            #self.lod_ppds()
+
+    @classmethod
+    def ext_prst(cls):
+        """We're treating all the imported methods as static methods."""
+        #cls.persist = __import__('CircuitPython_pico_pi_controller.persist').persist
+        cls.show_free = __import__('CircuitPython_pico_pi_controller.persist').persist.show_free
+        cls.wrt_ppds  = __import__('CircuitPython_pico_pi_controller.persist').persist.wrt_ppds
+
+    def sav_ppds(self):
+        """Writes a JSON file with PPD information. Will finish after installing
+           a physical read/write switch."""
+        serial_ppds = {}
+        for ppd in self.ppds:
+            serial_ppds[hex(  ppd.device_address)] = {
+                'hostname':   ppd.hostname,
+                'bosmang':    ppd.bosmang,
+                'lastonline': ppd.lastonline,
+                'uptime':     ppd.uptime,
+                'timestamp':  ppd.timestamp,
+                'utcoffset':  ppd.utcoffset
+            }
+        self.wrt_ppds(serial_ppds)
 
     def log_txn(self, fname, message, hexaddr=None, msg=None):
         """Wrapper for logger."""
@@ -459,8 +492,8 @@ class PPController():
         return None
 
     def cmd_hndlr(self, ppd):
-        fname='cmd_hndlr'
         """Handle a command sent by a PPDevice."""
+        fname='cmd_hndlr'
         if self.get_ppd(device_address=ppd.command[1]):
             if ppd.command[0] == CMD_CODE['FLICKER']:
                 #self.log_txn(fname,str(ppd.command),hex(ppd.command[1]))
