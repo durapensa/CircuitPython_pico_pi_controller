@@ -4,17 +4,12 @@ __all__ = ['show_free', 'wrt_ppds']
 
 # Cell
 
-#import json
-#from CircuitPython_pico_pi_common.codes import *
 import gc
 import json
-#import CircuitPython_pico_pi_controller.reports as PPR
-from .reports import ReportData
 
 # Cell
 
-# imported as PPController.persist, methods should be interpreted as instance methods.
-# json module impported as PPController.json
+# imported on-demand as PPController.persist, methods should be interpreted as static methods.
 
 @staticmethod
 def show_free(logger,id_str,i2c_str):

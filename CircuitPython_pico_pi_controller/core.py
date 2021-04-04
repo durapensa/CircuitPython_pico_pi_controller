@@ -179,7 +179,7 @@ class PPDevice():
                 """Get the command code or 0 for no command"""
                 cmd_code = int.from_bytes(bytes(cmd),byteorder)
                 if cmd_code:
-                    #cmd_tup  = self.dcd_cmd(cmd_code)
+                    self.log_txn(fname,"recvd: ",cmd_code)
                     cmda = bytearray(CMD_VAL_LEN[cmd_code])
                     i2cdevice.readinto(cmda)
                     self.log_txn(fname,"recvd command ",CMD_NAME[cmd_code]+' '+str(hex(cmda[0])))
