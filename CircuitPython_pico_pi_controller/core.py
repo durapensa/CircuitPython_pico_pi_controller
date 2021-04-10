@@ -5,9 +5,8 @@ __all__ = ['UNDevice', 'PPDevice', 'PPController']
 # Cell
 
 from CircuitPython_pico_pi_common.codes import *
+import board, microcontroller, binascii
 from sys import byteorder
-import board
-import microcontroller
 from busio import I2C
 from adafruit_bus_device.i2c_device import I2CDevice
 try:
@@ -74,6 +73,8 @@ class PPDevice():
            Only one bosmang per controller please, unless you wanya chaos."""
         self.command    = None
         """type: bytes Ref: CMD_CODES The latest command received from a PPC device."""
+        self.cmd_from   = None
+        """type: int device_address of the PPD that sent the command or 0x00 for ppdd."""
 
         self.hostname   = None
         """type: str"""
@@ -128,6 +129,9 @@ class PPDevice():
                 """Get the length in bytes of the hostname"""
                 msg = bytearray(int.from_bytes(msg, byteorder))
                 i2cdevice.readinto(msg)
+                if len(msg.decode()) > 12:
+                    self.log_txn(fname,"error I2C TX/RX")
+                    return None
                 self.lastonline=int(datetime.now().timestamp())
                 self.log_txn(fname,"recvd hostname ",msg.decode())
                 return msg.decode()
@@ -167,32 +171,6 @@ class PPDevice():
                 pass
         return None
 
-    def get_cmd(self):
-        """Ask PPD for a command (if any)"""
-        fname='get_cmd'
-        #self.log_txn(fname,"querying device")
-        with self.i2cdevice as i2cdevice:
-            self.clr_fifo(i2cdevice)
-            cmd = bytearray(REG_VAL_LEN['CMD'])
-            try:
-                i2cdevice.write_then_readinto(REG_CODE['CMD'],cmd)
-                """Get the command code or 0 for no command"""
-                cmd_code = int.from_bytes(bytes(cmd),byteorder)
-                if cmd_code:
-                    self.log_txn(fname,"recvd: ",cmd_code)
-                    cmda = bytearray(CMD_VAL_LEN[cmd_code])
-                    i2cdevice.readinto(cmda)
-                    self.log_txn(fname,"recvd command ",CMD_NAME[cmd_code]+' '+str(hex(cmda[0])))
-                    self.lastonline=int(datetime.now().timestamp())
-                    return cmd+cmda
-                else:
-                    self.lastonline=int(datetime.now().timestamp())
-                    self.log_txn(fname,"recvd no command")
-                    return None
-            except OSError:
-                pass
-        return None
-
     def get_tzn(self):
         """Ask PPD for its timezone (in seconds offset from utc)"""
         fname='get_tzn'
@@ -219,7 +197,11 @@ class PPDevice():
             try:
                 i2cdevice.write_then_readinto(REG_CODE['LOD'],msg)
                 self.lastonline=int(datetime.now().timestamp())
-                self.log_txn(fname,"recvd loadavg: ","{:04.2f}".format(float(msg.decode())))
+                try:
+                    self.log_txn(fname,"recvd loadavg: ","{:04.2f}".format(float(msg.decode())))
+                except ValueError:
+                    self.log_txn(fname,"error I2C TX/RX")
+                    return None
                 return msg.decode()
             except OSError:
                 pass
@@ -239,7 +221,7 @@ class PPDevice():
                 i2cdevice.readinto(msg)
                 self.lastonline=int(datetime.now().timestamp())
                 self.log_txn(fname,"recvd uptime: ",int.from_bytes(bytes(msg),byteorder))
-                self.log_txn(fname,"uptime %d d %02d:%02d" % self.conv_sec(int.from_bytes(bytes(msg),byteorder))[:3])
+                self.log_txn(fname,"      uptime: %d d %02d:%02d" % self.conv_sec(int.from_bytes(bytes(msg),byteorder))[:3])
                 return int.from_bytes(bytes(msg),byteorder)
             except OSError:
                 pass
@@ -257,20 +239,74 @@ class PPDevice():
         """Ask PPD for the MCU board pin where its PEN is connected"""
         return self.pen
 
-    def set_flkr(self, duration):
+    def get_cmd(self):
+        """Ask PPD for a command (if any)"""
+        fname='get_cmd'
+        #self.log_txn(fname,"querying device")
+        with self.i2cdevice as i2cdevice:
+            self.clr_fifo(i2cdevice)
+            cmd = bytearray(REG_VAL_LEN['CMD'])
+            try:
+                i2cdevice.write_then_readinto(REG_CODE['CMD'],cmd)
+                """Get the command code or 0 for no command"""
+                #self.log_txn(fname,"recvd: ",cmd)
+                cmd_code = cmd[0]
+                if cmd_code not in CMD_NAME:
+                    self.log_txn(fname,"recvd invalid command: ",cmd_code)
+                    return None
+                if cmd_code:
+                    #self.log_txn(fname,"recvd: ",cmd_code)
+                    remaindr= bytearray(CMD_ARG_LEN[cmd_code]+8) #CMD_ARG_LEN includes device_address
+                                                                 #cmd_uid is 8 bytes
+                    i2cdevice.readinto(remaindr)
+                    command = cmd+remaindr
+                    cmd_code, i2c_addr, cmdargs, cmd_uid, valid_status = parse_cmd(command)
+
+                    self.log_txn(fname,"RECVD ",CMD_NAME[cmd_code]+' '+str(hex(i2c_addr))+' '+str(len(cmdargs))+':0x'+binascii.hexlify(cmdargs).decode())
+                    self.log_txn(fname,"      ",str(hex(int.from_bytes(cmd_uid, byteorder)))[2:])
+
+                    self.lastonline=int(datetime.now().timestamp())
+                    return command
+                else:
+                    self.lastonline=int(datetime.now().timestamp())
+                    return None
+            except OSError:
+                pass
+        return None
+
+    def set_cfm(self, command, target_i2c_addr):
+        """Tell a PPD that an activity related to a command it sent is confirmed
+           as having been acted upon. cmd_code & i2c_addr are both ints."""
+        fname='set_cfm'
+        cmd_code, i2c_addr, cmdargs, cmd_uid, valid_status = parse_cmd(command)
+        if valid_status:
+            with self.i2cdevice as i2cdevice:
+                self.clr_fifo(i2cdevice)
+                # pokes CFM register with: i2c_addr, whole command incl. uid
+                msg = REG_CODE['CFM'] + target_i2c_addr.to_bytes(1,byteorder) + command
+                try:
+                    i2cdevice.write(msg)
+                    self.log_txn(fname," CFMD ",CMD_NAME[cmd_code]+' '+str(hex(target_i2c_addr))+' '+str(len(cmdargs))+':0x'+binascii.hexlify(cmdargs).decode())
+                    self.log_txn(fname,"      ",str(hex(int.from_bytes(cmd_uid, byteorder)))[2:])
+                    return True
+                except OSError:
+                    return False
+            return False
+
+    def set_flk(self, duration):
         """Tell PPD to flicker its power LED for duration (seconds)"""
-        fname='set_flkr'
+        fname='set_flk'
         #self.log_txn(fname,"querying device")
         with self.i2cdevice as i2cdevice:
             self.clr_fifo(i2cdevice)
             msg = REG_CODE['FLK'] + bytearray([duration])
             try:
                 i2cdevice.write(msg)
-                self.log_txn(fname,'sent FLICKER: '+str(duration)+' seconds')
+                self.log_txn(fname,' sent flicker '+str(duration)+' second%s' %('s' if duration > 1 else ''))
                 return True
             except OSError:
-                pass
-        return None
+                return False
+        return False
 
 class PPController():
     """Represents one of the system's I2C busses and tracks which I2C
@@ -319,7 +355,7 @@ class PPController():
             self.add_ppd(self.bosmang)
             self.ppds[0].bosmang = True
             self.bosmang_lok = True
-            self.log_txn(fname,'>>>  BOSMANG set, lok  <<<',hex(self.bosmang))
+            self.log_txn(fname,'      BOSMANG set, locked',hex(self.bosmang))
             self.qry_ppds()
 
         if self.save:
@@ -360,12 +396,18 @@ class PPController():
         self.ppds.append(PPDevice(controller=self,device_address=device_address))
         self.ppds[0].i2cdevice=I2CDevice(self.i2c,device_address=device_address,probe=False)
 
+    def set_rtc(self,timestamp):
+        """Set the MCU's realtime clock."""
+        fname='set_rtc'
+        self.clock.datetime = datetime.fromtimestamp(timestamp).timetuple()
+        self.log_txn(fname,"      "+str(datetime.now()))
+
     def i2c_scan(self):
         """Scans the I2C bus and creates I2CDevice objects for each I2C peripheral."""
         fname='i2c_scan'
         while not self.i2c.try_lock():
             pass
-        self.log_txn(fname,">>>  SCANNING I2C bus  <<<")
+        self.log_txn(fname,"      I2C SCANNING bus")
 
         for addr in self.i2c.scan():
             if not any(d.device_address == addr for d in chain(self.ppds,self.noident,self.othrdev)):
@@ -383,7 +425,7 @@ class PPController():
         while index < len(self.noident):
             addr = self.noident[index].device_address
             msg = bytearray(REG_VAL_LEN['CLR'])
-            self.log_txn(fname,"querying I2C peripheral",hex(addr))
+            self.log_txn(fname,"probn I2C peripheral",hex(addr))
             with self.noident[index].i2cdevice as i2cd_unident:
                 try:
                     i2cd_unident.write_then_readinto(REG_CODE['CLR'],msg)
@@ -392,7 +434,7 @@ class PPController():
                     pass
                 msg = bytearray(len(ID_CODE))
                 try:
-                    i2cd_unident.write_then_readinto(REG_CODE['IDF'],msg)
+                    i2cd_unident.write_then_readinto(REG_CODE['IDF']+binascii.unhexlify(self.mcu_uid[2:]),msg)
                 except OSError:
                     self.log_txn(fname,"WRITE FAILED",hex(addr))
                 if msg == ID_CODE:
@@ -400,10 +442,10 @@ class PPController():
                     self.ppds[-1].i2cdevice = i2cd_unident
                     self.ppds[-1].lastonline=int(datetime.now().timestamp())
                     del self.noident[index]
-                    self.log_txn(fname,">>>   ADDED PPDevice   <<<",hex(addr))
+                    self.log_txn(fname,"      ADDED PPDevice",hex(addr))
                 else:
                     self.noident[index].retries += 1
-                    self.log_txn(fname,"ID FAILED on try ",hex(addr),self.noident[index].retries)
+                    self.log_txn(fname,"      ID FAILED on try ",hex(addr),self.noident[index].retries)
                     if self.noident[index].retries >= self.noident[index].retries_max:
                         self.log_txn(fname,"max retries; releasing",hex(addr))
                         self.othrdev.append(self.noident.pop(index))
@@ -416,10 +458,10 @@ class PPController():
     def add_ppds(self):
         """This class is a wrapper for `i2c_scan` + `idf_ppds`."""
         fname='add_ppds'
-        self.log_txn(fname,'Auto-adding PPDevices')
+        self.log_txn(fname,'      ADDING PPDevices')
         self.i2c_scan()
         if self.noident:
-            self.log_txn(fname,"found new peripherals: ",'',len(self.noident))
+            self.log_txn(fname,"found I2C peripherals: ",'',len(self.noident))
             self.idf_ppds()
 
     def qry_ppds(self,ppds=None):
@@ -427,20 +469,28 @@ class PPController():
            Updates bosmang status if setting not locked on controller.
            Note that certain PPD metadata, once set, can be changed only via command."""
         fname='qry_ppds'
-        #self.log_txn(fname,'    function called')
+        #self.log_txn(fname,'      function called')
         for ppd in ppds or self.ppds:
             #self.log_txn(fname,'current bosmang: ',None,hex(self.bosmang) if self.bosmang is not None else 'None')
             if not self.bosmang_lok:
-                ppd.bosmang   = ppd.get_bos()
-            ppd.timestamp = ppd.get_tim()
+                bosmang = None
+                while type(bosmang).__name__ != 'bool':
+                    bosmang   = ppd.get_bos()
+                    if type(bosmang).__name__ == 'bool':
+                        ppd.bosmang = bosmang
+            timestamp = None
+            while not timestamp:
+                timestamp = ppd.get_tim()
+                if timestamp:
+                    ppd.timestamp = timestamp
             if ppd.bosmang and ppd.timestamp:
                 self.set_rtc(ppd.timestamp)
                 if not self.bosmang:
                     self.bosmang  = ppd.device_address
-                    self.log_txn(fname,'>>>  BOSMANG assigned  <<<',hex(self.bosmang))
+                    self.log_txn(fname,'>>>>> BOSMANG assigned',hex(self.bosmang))
                 elif self.bosmang != ppd.device_address:
                     self.bosmang  = ppd.device_address
-                    self.log_txn(fname,'>>>  BOSMANG changed!  <<<',hex(self.bosmang))
+                    self.log_txn(fname,'>>>>> BOSMANG changed!',hex(self.bosmang))
             if not ppd.uart_rx:
                 ppd.uart_rx   = ppd.get_urx()
             if not ppd.uart_tx:
@@ -448,36 +498,27 @@ class PPController():
             if not ppd.pen:
                 ppd.PEN       = ppd.get_pen()
             if not ppd.hostname:
-                hos = ppd.get_hos()
-                if hos:
-                    ppd.hostname = hos
+                hostname = None
+                while not hostname:
+                    hostname = ppd.get_hos()
+                    if hostname:
+                        ppd.hostname = hostname
             if not ppd.utcoffset:
-                ppd.utcoffset = ppd.get_tzn()
-            ppd.loadavg       = ppd.get_lod()
-            ppd.uptime        = ppd.get_upt()
-
-    def png_ppds(self,  ppds=[] , register_names=None):
-        """Pings PPDs for queued commands, register values; pings all PPDs by default,
-           or a list of ppds, in both cases starting with bosmang."""
-        fname='png_ppds'
-        if self.bosmang and self.ppds:
-            if self.ppds[0] != self.get_ppd(device_address=self.bosmang):
-                self.ppds.insert(0, self.ppds.pop(self.ppds.index(self.get_ppd(device_address=self.bosmang))))
-
-        if self.bosmang and not self.get_ppd(device_address=self.bosmang) in ppds:
-            ppds = [self.get_ppd(device_address=self.bosmang)] + ppds
-
-        self.log_txn(fname,'>>> Pinging PPDevices <<<')
-        for ppd in ppds[1:] or self.ppds:
-            ppd.command   = ppd.get_cmd()
-            if isinstance(ppd.command, bytearray):
-                self.cmd_hndlr(ppd)
-
-    def set_rtc(self,timestamp):
-        """Set the MCU's realtime clock."""
-        fname='set_rtc'
-        self.clock.datetime = datetime.fromtimestamp(timestamp).timetuple()
-        self.log_txn(fname,str(datetime.now()))
+                utcoffset = None
+                while not utcoffset:
+                    utcoffset = ppd.get_tzn()
+                    if utcoffset:
+                        ppd.utcoffset = utcoffset
+            loadavg = None
+            while not loadavg:
+                loadavg       = ppd.get_lod()
+                if loadavg:
+                    ppd.loadavg = loadavg
+            uptime = None
+            while not uptime:
+                uptime        = ppd.get_upt()
+                if uptime:
+                    ppd.uptime = uptime
 
     def get_ppd(self, device_address=None, hostname=None):
         """Get a PPDevice object by device_address or hostname."""
@@ -491,13 +532,55 @@ class PPController():
                 return dlist[0]
         return None
 
+    def png_ppds(self,  ppds=[] , register_names=None):
+        """Pings PPDs for queued commands, register values; pings all PPDs by default,
+           or a list of ppds, in both cases starting with bosmang."""
+        fname='png_ppds'
+        if self.bosmang and self.ppds:
+            if self.ppds[0] != self.get_ppd(device_address=self.bosmang):
+                self.ppds.insert(0, self.ppds.pop(self.ppds.index(self.get_ppd(device_address=self.bosmang))))
+
+        if self.bosmang and not self.get_ppd(device_address=self.bosmang) in ppds:
+            ppds = [self.get_ppd(device_address=self.bosmang)] + ppds
+
+        #self.log_txn(fname,'>>> Pinging PPDevices <<<')
+        #self.log_txn(fname,ppds[1:])
+        for ppd in ppds[1:] or self.ppds:
+            #self.log_txn(fname,"get_cmd",hex(ppd.device_address))
+            ppd.command   = ppd.get_cmd()
+            if isinstance(ppd.command, bytearray):
+                self.cmd_hndlr(ppd)
+
     def cmd_hndlr(self, ppd):
         """Handle a command sent by a PPDevice."""
         fname='cmd_hndlr'
-        if self.get_ppd(device_address=ppd.command[1]):
-            if ppd.command[0] == CMD_CODE['FLICKER']:
-                #self.log_txn(fname,str(ppd.command),hex(ppd.command[1]))
-                self.get_ppd(device_address=ppd.command[1]).set_flkr(ppd.command[2])
+        if ppd.command[0] in CMD_INT:
+            cmd_code = ppd.command[0]
+            cmd_args = [arg for arg in ppd.command[2:CMD_ARG_LEN[cmd_code]+1]]
+            cmd_uid = ppd.command[CMD_ARG_LEN[cmd_code]+1:]
+            target_ppds = []
+            if cmd_code < 0xFF:
+                target_ppds = [self.get_ppd(device_address=ppd.command[1])]
+            else:
+                target_ppds = [self.get_ppd(device_address=d.device_address) for d in self.ppds]
+
+            for target_ppd in target_ppds:
+                if cmd_code in COMPLEX_CMD:
+                    if CMD_NAME[cmd_code] == 'REG_GET':
+                        getattr(target_ppd,'get_'+REG_NAME[ppd.command[3]].lower())
+                        # need REG_ATR_MAP for self.getattr(ppd.REG_ATR_MAP[ppd.command[1]].lower)
+                        # so that the returned value can be set at ppd.value (as in qry_ppds)
+                        # so need to expand CMD_CATALOG & update dict generators
+                    else: #elif
+                        pass # complex commands ROUNDROBIN, REPORT
+                else:
+                    # the simplest case:
+                    #self.log_txn(fname,CMD_NAME[cmd_code]+str(cmd_args),hex(target_ppd.device_address))
+                    if getattr(target_ppd,'set_'+CMD_REG_MAP[cmd_code].lower())( *cmd_args):
+                        if ppd.set_cfm(ppd.command, target_ppd.device_address):
+                            ppd.command = None
+                        #self.log_txn(fname,CMD_NAME[cmd_code],hex(target_ppd.device_address))
         else:
-            self.log_txn(fname,"No device "+hex(ppd.command[1]))
-        ppd.command = None
+            self.log_txn(fname,"recvd invalid cmd code: ",ppd.command[0])
+            return False
+        return True
